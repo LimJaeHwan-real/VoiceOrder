@@ -83,3 +83,8 @@ http://localhost:5000
 
 - 작업 가이드: `CONTRIBUTING.md`
 - PR 템플릿: `.github/PULL_REQUEST_TEMPLATE.md`
+## Vercel 배포 참고
+
+현재 Vercel 배포에서는 `KIOSK_DB_PATH` 환경변수를 따로 주지 않으면 `/tmp/kiosk.db`를 사용합니다.
+이 경로는 데모 실행에는 적합하지만, 인스턴스 재시작이나 재배포 후 주문 데이터가 유지된다고 보장되지는 않습니다.
+지속 저장이 필요하면 외부 DB나 영속 스토리지를 연결한 뒤 `KIOSK_DB_PATH`를 설정해야 합니다.
