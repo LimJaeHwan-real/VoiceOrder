@@ -83,3 +83,17 @@ http://localhost:5000
 
 - 작업 가이드: `CONTRIBUTING.md`
 - PR 템플릿: `.github/PULL_REQUEST_TEMPLATE.md`
+
+## 배포 자동화
+
+`main` 브랜치에 푸시되면 GitHub Actions가 Vercel `production` 배포를 실행합니다.
+
+동작 파일:
+
+- `.github/workflows/vercel-production.yml`
+
+필수 GitHub Actions secret:
+
+- `VERCEL_TOKEN`: Vercel 개인 또는 팀 토큰
+
+이 저장소는 이미 Vercel 프로젝트에 연결되어 있어 워크플로 안에 `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`가 고정되어 있습니다.
