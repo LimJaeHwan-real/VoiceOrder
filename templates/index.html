@@ -148,49 +148,148 @@
     </section>
   </main>
 
-  <div id="paymentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-[#160b08]/70 px-4 py-6 backdrop-blur-sm">
-    <div class="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-[#f6dc96] bg-[#f8f3eb] shadow-[0_35px_110px_rgba(0,0,0,0.35)]">
-      <div class="grid lg:grid-cols-[0.92fr_1.08fr]">
-        <section class="bg-[linear-gradient(180deg,_#2b100d_0%,_#120909_100%)] px-6 py-6 text-white lg:px-8">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm font-extrabold uppercase tracking-[0.24em] text-[#ffc72c]">Select Payment</p>
-              <h2 class="mt-2 text-3xl font-black">Choose a payment method</h2>
+  <div id="paymentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-[3px]">
+    <div class="w-full max-w-[860px] overflow-hidden rounded-[2rem] border border-[#d8c8ab] bg-[#f7f1e7] shadow-[0_28px_90px_rgba(0,0,0,0.35)]">
+      <div class="border-b border-[#e2d4bc] bg-[linear-gradient(180deg,_#fff9ef_0%,_#f4ead6_100%)] px-6 py-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p id="paymentStepLabel" class="text-xs font-extrabold uppercase tracking-[0.34em] text-[#b27b12]">?? ??</p>
+            <h2 id="paymentModalTitle" class="mt-2 text-3xl font-black text-[#5c130d]">?? ??? ??? ???</h2>
+            <p id="paymentModalSubtitle" class="mt-2 text-sm leading-6 text-[#7a5e49]">?? ?????? ?? ?? ???? ??, ????, PAYCO, ?????, ???? ? ??? ??? ???.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="backToMethodsButton" class="hidden rounded-full border border-[#d9c7a3] bg-white px-4 py-2 text-sm font-bold text-[#7a5e49] transition hover:bg-[#fff7e9]">Back</button>
+            <button id="closePaymentModalButton" class="rounded-full border border-[#d9c7a3] bg-white px-4 py-2 text-sm font-bold text-[#7a5e49] transition hover:bg-[#fff7e9]">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 px-6 py-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <section class="order-2 lg:order-1">
+          <div id="paymentMethodGrid" class="grid gap-4 sm:grid-cols-2">
+            <button data-method="card" class="brand-button overflow-hidden rounded-[1.65rem] border border-[#e5d8c0] bg-white p-5 text-left shadow-[0_12px_30px_rgba(92,19,13,0.08)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-[#9b6d0d]">CARD</p>
+              <p class="mt-3 text-3xl font-black text-[#4f1b10]">????</p>
+              <p class="mt-2 text-sm leading-6 text-[#7a5e49]">??? ???? ?? ???? ??</p>
+            </button>
+            <button data-method="samsung" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#1658b3] p-5 text-left text-white shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">MOBILE PAY</p>
+              <p class="mt-3 text-3xl font-black">SAMSUNG pay</p>
+              <p class="mt-2 text-sm leading-6 text-white/85">???? ???? ??? ?? ??</p>
+            </button>
+            <button data-method="payco" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#ff2d2d] p-5 text-left text-white shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">BARCODE PAY</p>
+              <p class="mt-3 text-3xl font-black">PAYCO</p>
+              <p class="mt-2 text-sm leading-6 text-white/85">???? ???? ???? ??</p>
+            </button>
+            <button data-method="kakao" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#f8df00] p-5 text-left text-[#231f20] shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-[#544300]">QR PAY</p>
+              <p class="mt-3 text-3xl font-black">kakaopay</p>
+              <p class="mt-2 text-sm leading-6 text-[#413400]">QR ?? ??? ?? ??</p>
+            </button>
+            <button data-method="zeropay" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#2145a1] p-5 text-left text-white shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 sm:col-span-2">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">LOCAL PAY</p>
+              <p class="mt-3 text-3xl font-black">zeropay</p>
+              <p class="mt-2 text-sm leading-6 text-white/85">??? QR ?? ?? ??? ??</p>
+            </button>
+          </div>
+
+          <div id="paymentDetailView" class="hidden rounded-[1.75rem] border border-[#d8c8ab] bg-white p-5 shadow-[0_12px_30px_rgba(92,19,13,0.08)]">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p id="paymentDetailEyebrow" class="text-xs font-extrabold uppercase tracking-[0.28em] text-[#b27b12]"></p>
+                <h3 id="paymentDetailTitle" class="mt-3 text-3xl font-black text-[#5c130d]"></h3>
+                <p id="paymentDetailDescription" class="mt-3 text-sm leading-6 text-[#7a5e49]"></p>
+              </div>
+              <span class="rounded-full bg-[#fff0cb] px-3 py-1 text-xs font-extrabold text-[#8c5a00]">?? ??</span>
             </div>
-            <button id="closePaymentModalButton" class="rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white/80 transition hover:bg-white/10">Close</button>
-          </div>
-          <div id="paymentMethodGrid" class="mt-6 grid gap-4 sm:grid-cols-2">
-            <button data-method="card" class="brand-button rounded-[1.5rem] bg-white p-5 text-left text-[#231f20] shadow-xl"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#9b6d0d]">Card</p><p class="mt-3 text-3xl font-black">Card</p><p class="mt-2 text-sm text-slate-600">Insert card UI</p></button>
-            <button data-method="samsung" class="brand-button rounded-[1.5rem] bg-[#1658b3] p-5 text-left text-white shadow-xl"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">Wallet</p><p class="mt-3 text-3xl font-black">SAMSUNG pay</p><p class="mt-2 text-sm text-white/85">Tap phone UI</p></button>
-            <button data-method="payco" class="brand-button rounded-[1.5rem] bg-[#ff2d2d] p-5 text-left text-white shadow-xl"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">Barcode</p><p class="mt-3 text-3xl font-black">PAYCO</p><p class="mt-2 text-sm text-white/85">Barcode scan UI</p></button>
-            <button data-method="kakao" class="brand-button rounded-[1.5rem] bg-[#f8df00] p-5 text-left text-[#231f20] shadow-xl"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#544300]">QR</p><p class="mt-3 text-3xl font-black">kakaopay</p><p class="mt-2 text-sm text-[#413400]">QR payment UI</p></button>
-            <button data-method="zeropay" class="brand-button rounded-[1.5rem] bg-[#2145a1] p-5 text-left text-white shadow-xl sm:col-span-2"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">Merchant Scan</p><p class="mt-3 text-3xl font-black">zeropay</p><p class="mt-2 text-sm text-white/85">Merchant QR UI</p></button>
-          </div>
-          <div class="mt-6 rounded-[1.5rem] bg-white/8 p-4">
-            <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#ffc72c]">Current Cart</p>
-            <div id="paymentCartSummary" class="mt-3 space-y-2 text-sm text-white/88"></div>
-            <div class="mt-4 flex items-center justify-between border-t border-white/10 pt-3"><span class="text-white/70">Total</span><strong id="paymentTotal" class="text-2xl font-black text-[#ffc72c]">0 KRW</strong></div>
+
+            <div class="mt-5 rounded-[1.75rem] bg-[linear-gradient(180deg,_#2b2b2b_0%,_#171717_100%)] p-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div class="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] text-white/55">
+                <span id="terminalLabel">PAYMENT TERMINAL</span>
+                <span>SELF KIOSK</span>
+              </div>
+              <div id="paymentVisual" class="mt-5"></div>
+              <div class="mt-5 rounded-[1.3rem] bg-white/8 px-4 py-4">
+                <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#ffc72c]">?? ??</p>
+                <p id="paymentInstructionText" class="mt-3 text-lg font-black leading-7 text-white"></p>
+              </div>
+            </div>
+
+            <button id="simulatePaymentButton" class="payment-glow mt-5 w-full rounded-[1.45rem] bg-[#da291c] px-6 py-4 text-lg font-black text-white transition hover:bg-[#bf1f14]">??? ?? ??</button>
           </div>
         </section>
-        <section class="px-6 py-6 lg:px-8">
-          <div id="paymentIntroView" class="flex min-h-[520px] flex-col justify-between">
-            <div><p class="text-sm font-extrabold uppercase tracking-[0.24em] text-[#b27b12]">Ready To Pay</p><h3 class="mt-2 text-4xl font-black text-[#5c130d]">Pick the flow to preview</h3><p class="mt-4 max-w-xl text-base leading-7 text-[#7a5e49]">Choose a payment option to open a kiosk-style pre-payment screen with card insert, barcode scan, or QR guidance.</p></div>
-            <div class="grid gap-4 sm:grid-cols-3"><div class="rounded-[1.5rem] border border-[#ecd8b7] bg-white p-5"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#b27b12]">STEP 1</p><p class="mt-3 text-xl font-black text-[#5c130d]">Select method</p></div><div class="rounded-[1.5rem] border border-[#ecd8b7] bg-white p-5"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#b27b12]">STEP 2</p><p class="mt-3 text-xl font-black text-[#5c130d]">Show payment UI</p></div><div class="rounded-[1.5rem] border border-[#ecd8b7] bg-white p-5"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#b27b12]">STEP 3</p><p class="mt-3 text-xl font-black text-[#5c130d]">Complete demo</p></div></div>
-            <div class="rounded-[1.8rem] bg-[linear-gradient(135deg,_#fff7df_0%,_#ffe6b7_100%)] p-6 text-[#5c130d]"><p class="text-sm font-extrabold uppercase tracking-[0.24em] text-[#b27b12]">Demo Note</p><p class="mt-3 text-lg font-black">Pre-PG kiosk experience</p><p class="mt-3 leading-7">This modal stops just before real payment approval. The complete button reuses the existing order-save flow for demo purposes.</p></div>
+
+        <aside class="order-1 rounded-[1.75rem] border border-[#e5d8c0] bg-[linear-gradient(180deg,_#5c130d_0%,_#3d0d08_100%)] p-5 text-white shadow-[0_14px_40px_rgba(92,19,13,0.18)] lg:order-2">
+          <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-[#ffd469]">?? ??</p>
+          <div id="paymentCartSummary" class="mt-4 space-y-3"></div>
+          <div class="mt-5 rounded-[1.4rem] bg-white/10 px-4 py-4">
+            <div class="flex items-center justify-between text-sm text-white/70">
+              <span>? ?? ??</span>
+              <span>?? ?? ?</span>
+            </div>
+            <p id="paymentTotal" class="mt-2 text-3xl font-black text-[#ffc72c]">0?</p>
           </div>
-          <div id="paymentDetailView" class="hidden min-h-[520px]"><div class="flex items-start justify-between gap-4"><div><p id="paymentDetailEyebrow" class="text-sm font-extrabold uppercase tracking-[0.24em] text-[#b27b12]">Payment Method</p><h3 id="paymentDetailTitle" class="mt-2 text-4xl font-black text-[#5c130d]"></h3><p id="paymentDetailDescription" class="mt-4 max-w-xl text-base leading-7 text-[#7a5e49]"></p></div><button id="backToMethodsButton" class="rounded-full border border-[#e6cf9c] bg-white px-4 py-2 text-sm font-bold text-[#7a5e49] transition hover:bg-[#fff8e5]">Back</button></div><div class="mt-8 rounded-[2rem] bg-[linear-gradient(180deg,_#212121_0%,_#2e2e2e_100%)] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.24)]"><div class="flex items-center justify-between text-sm text-white/70"><span id="terminalLabel">PAYMENT TERMINAL</span><span>NO. 01</span></div><div id="paymentVisual" class="mt-6"></div><div class="mt-6 rounded-[1.5rem] bg-white/8 px-4 py-4"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#ffc72c]">Instruction</p><p id="paymentInstructionText" class="mt-3 text-lg font-bold text-white"></p></div></div><div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm leading-6 text-[#7a5e49]">This is a simulated payment step only.</p><button id="simulatePaymentButton" class="payment-glow rounded-[1.4rem] bg-[#da291c] px-6 py-4 text-base font-black text-white transition hover:bg-[#bf1f14]">Complete Demo Payment</button></div></div>
-        </section>
+          <div class="mt-5 rounded-[1.4rem] bg-white/8 px-4 py-4 text-sm leading-6 text-white/78">
+            ?? ???? ?? ??? ??? ??? ????? ?????. ?? ?? ?? ?? ?? UX? ????????.
+          </div>
+        </aside>
       </div>
     </div>
   </div>
 
   <script>
     const paymentConfigs = {
-      card: { label: "Card", eyebrow: "Credit Card", description: "Insert an IC or debit card into the terminal slot.", terminal: "CARD READER", instruction: "Insert your card and keep it in the reader until approval.", visual: `<div class="rounded-[1.5rem] bg-black/30 p-6"><div class="rounded-[1.2rem] border border-dashed border-[#ffc72c] px-6 py-8 text-center"><p class="text-sm font-bold text-white/80">IC CARD SLOT</p><div class="mx-auto mt-5 h-6 w-40 rounded-full bg-white/10"><div class="h-6 w-24 rounded-full bg-[#ffc72c]"></div></div><p class="mt-4 text-xs text-white/50">Insert card with chip facing up</p></div></div>` },
-      samsung: { label: "SAMSUNG pay", eyebrow: "Mobile Wallet", description: "Hold the phone near the terminal while the wallet screen is active.", terminal: "NFC READY", instruction: "Hold your phone near the terminal.", visual: `<div class="grid gap-5 lg:grid-cols-2 lg:items-center"><div class="rounded-[1.5rem] bg-[#1658b3] p-6 text-center text-white"><p class="text-xs uppercase tracking-[0.2em] text-white/60">Wallet</p><p class="mt-4 text-4xl font-black">SAMSUNG pay</p></div><div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 text-center"><div class="mx-auto w-36 rounded-[1.6rem] bg-[#111] p-4"><div class="rounded-[1.2rem] bg-[#223e8b] p-6 text-sm font-bold">Tap phone now</div></div></div></div>` },
-      payco: { label: "PAYCO", eyebrow: "Barcode Scan", description: "Open the PAYCO barcode and align it to the scanner area.", terminal: "SCAN BARCODE", instruction: "Place the PAYCO barcode inside the scanner window.", visual: `<div class="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0d0d0d] p-6"><div class="scan-line absolute left-4 right-4 h-1 bg-[#ff4d4d]"></div><div class="mx-auto max-w-sm rounded-xl bg-white px-4 py-6 text-center text-[#111]"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#ff2d2d]">PAYCO BARCODE</p><div class="mt-5 h-24 bg-[repeating-linear-gradient(90deg,_#111_0,_#111_3px,_transparent_3px,_transparent_7px)]"></div><p class="mt-4 text-xs tracking-[0.34em] text-slate-500">9302 1148 2251</p></div></div>` },
-      kakao: { label: "kakaopay", eyebrow: "QR Payment", description: "Show the KakaoPay QR or barcode to the scanner.", terminal: "QR SCAN READY", instruction: "Align the QR or barcode inside the scan area.", visual: `<div class="grid gap-5 lg:grid-cols-2 lg:items-center"><div class="rounded-[1.5rem] bg-[#f8df00] p-6 text-center text-[#231f20]"><p class="text-xs uppercase tracking-[0.2em] text-[#544300]">Quick Pay</p><p class="mt-4 text-4xl font-black">kakaopay</p></div><div class="rounded-[1.5rem] bg-white p-5 text-center text-black"><div class="mx-auto h-40 w-40 bg-[linear-gradient(45deg,_#000_25%,_transparent_25%,_transparent_50%,_#000_50%,_#000_75%,_transparent_75%,_transparent)] bg-[length:18px_18px]"></div><p class="mt-4 text-sm font-bold">QR CODE</p></div></div>` },
-      zeropay: { label: "zeropay", eyebrow: "Merchant QR", description: "Scan the merchant QR or show a customer payment code.", terminal: "ZERO PAY", instruction: "Scan the merchant QR or show your ZeroPay code.", visual: `<div class="grid gap-5 lg:grid-cols-2 lg:items-center"><div class="rounded-[1.5rem] bg-[#2145a1] p-6 text-center text-white"><p class="text-xs uppercase tracking-[0.2em] text-white/60">Zero Pay</p><p class="mt-4 text-4xl font-black">zeropay</p></div><div class="rounded-[1.5rem] bg-white p-5 text-center text-[#2145a1]"><div class="mx-auto h-40 w-40 bg-[linear-gradient(45deg,_#2145a1_25%,_transparent_25%,_transparent_50%,_#2145a1_50%,_#2145a1_75%,_transparent_75%,_transparent)] bg-[length:18px_18px]"></div><p class="mt-4 text-sm font-bold">SCAN ME</p></div></div>` },
+      card: {
+        label: "????",
+        eyebrow: "CARD PAYMENT",
+        modalTitle: "?? ??",
+        modalSubtitle: "?? ?????? ??? ???? ?? ??? ?????.",
+        terminal: "CARD READER",
+        description: "IC ?? ?? ????? ??? ?? ??? ??? ?? ???.",
+        instruction: "??? ????. ?? ?? ??? ??? ?? ???.",
+        visual: `<div class="rounded-[1.5rem] bg-black/25 p-5"><div class="rounded-[1.4rem] border border-[#ffc72c]/40 bg-[#101010] px-5 py-8"><div class="mx-auto max-w-md rounded-[1.2rem] border border-dashed border-[#ffc72c] px-5 py-6 text-center"><p class="text-sm font-bold text-white/85">IC CARD SLOT</p><div class="mx-auto mt-5 h-3 w-44 rounded-full bg-white/10"><div class="h-3 w-24 rounded-full bg-[#ffc72c]"></div></div><div class="mt-6 flex items-center justify-center gap-4"><div class="h-12 w-16 rounded-md bg-[linear-gradient(135deg,_#d9b86a_0%,_#8e6c1f_100%)]"></div><p class="text-sm leading-6 text-white/65">??? IC?? ?? ???? ??? ?? ???.</p></div></div></div></div>`,
+      },
+      samsung: {
+        label: "SAMSUNG pay",
+        eyebrow: "MOBILE PAYMENT",
+        modalTitle: "SAMSUNG pay ??",
+        modalSubtitle: "???? ???? ??? ?? ?? ???? ?? ?????.",
+        terminal: "NFC READY",
+        description: "????? ???? ?? ??? ? ? ??? ?? ??? ??? ?? ???.",
+        instruction: "???? ???? ??? ? ???.",
+        visual: `<div class="grid gap-5 lg:grid-cols-[1fr_0.9fr] lg:items-center"><div class="rounded-[1.5rem] bg-[#1658b3] px-5 py-6 text-white"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-white/65">WALLET</p><p class="mt-4 text-4xl font-black">SAMSUNG pay</p><p class="mt-4 text-sm leading-6 text-white/80">?? ??? ? ???? ???? ??? ? ???.</p></div><div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 text-center"><div class="mx-auto w-36 rounded-[1.7rem] bg-[#0f0f0f] p-4 shadow-2xl"><div class="rounded-[1.2rem] bg-[#203f8a] p-6 text-sm font-bold text-white">??? ?? ??</div></div></div></div>`,
+      },
+      payco: {
+        label: "PAYCO",
+        eyebrow: "BARCODE PAYMENT",
+        modalTitle: "PAYCO ??",
+        modalSubtitle: "??? ?? ???? ??? ???? ??????.",
+        terminal: "SCAN BARCODE",
+        description: "PAYCO ?? ???? ?? ?? ??? ??? ?? ???.",
+        instruction: "PAYCO ???? ??? ??? ?? ???.",
+        visual: `<div class="rounded-[1.5rem] border border-white/10 bg-[#0f0f0f] p-5"><div class="relative overflow-hidden rounded-[1.25rem] bg-black px-4 py-6"><div class="scan-line absolute left-4 right-4 h-1 bg-[#ff4b4b]"></div><div class="mx-auto max-w-sm rounded-xl bg-white px-4 py-5 text-center text-[#111]"><p class="text-xs font-extrabold uppercase tracking-[0.22em] text-[#ff2d2d]">PAYCO BARCODE</p><div class="mt-5 h-24 bg-[repeating-linear-gradient(90deg,_#111_0,_#111_3px,_transparent_3px,_transparent_7px)]"></div><p class="mt-4 text-xs tracking-[0.34em] text-slate-500">9302 1148 2251</p></div></div></div>`,
+      },
+      kakao: {
+        label: "kakaopay",
+        eyebrow: "QR PAYMENT",
+        modalTitle: "kakaopay ??",
+        modalSubtitle: "?? ???? ?? ?? QR ?? ??? ?? ?????.",
+        terminal: "QR SCAN READY",
+        description: "????? QR ?? ???? ??? ??? ?? ???.",
+        instruction: "????? QR ?? ???? ?? ??? ?? ???.",
+        visual: `<div class="grid gap-5 lg:grid-cols-[1fr_0.95fr] lg:items-center"><div class="rounded-[1.5rem] bg-[#f8df00] px-5 py-6 text-[#231f20]"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#544300]">QUICK PAY</p><p class="mt-4 text-4xl font-black">kakaopay</p><p class="mt-4 text-sm leading-6 text-[#413400]">?? ?? ??? ?? ???? ?? ???.</p></div><div class="rounded-[1.5rem] bg-white p-5 text-center text-black"><div class="mx-auto h-40 w-40 bg-[linear-gradient(45deg,_#000_25%,_transparent_25%,_transparent_50%,_#000_50%,_#000_75%,_transparent_75%,_transparent)] bg-[length:18px_18px]"></div><p class="mt-4 text-sm font-bold">QR CODE</p></div></div>`,
+      },
+      zeropay: {
+        label: "zeropay",
+        eyebrow: "ZERO PAYMENT",
+        modalTitle: "zeropay ??",
+        modalSubtitle: "??? QR ?? ?? ?? ?? ???? ??????.",
+        terminal: "ZERO PAY",
+        description: "???? ??? ??? QR? ????? ?? ?? ??? ?? ???.",
+        instruction: "???? QR ?? ???? ?? ??? ?? ???.",
+        visual: `<div class="grid gap-5 lg:grid-cols-[1fr_0.95fr] lg:items-center"><div class="rounded-[1.5rem] bg-[#2145a1] px-5 py-6 text-white"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-white/65">LOCAL PAY</p><p class="mt-4 text-4xl font-black">zeropay</p><p class="mt-4 text-sm leading-6 text-white/80">??? QR ?? ?? ??? ??? ???.</p></div><div class="rounded-[1.5rem] bg-white p-5 text-center text-[#2145a1]"><div class="mx-auto h-40 w-40 bg-[linear-gradient(45deg,_#2145a1_25%,_transparent_25%,_transparent_50%,_#2145a1_50%,_#2145a1_75%,_transparent_75%,_transparent)] bg-[length:18px_18px]"></div><p class="mt-4 text-sm font-bold">SCAN ME</p></div></div>`,
+      },
     };
 
     const state = {
@@ -220,7 +319,9 @@
     const paymentMethodGrid = document.getElementById("paymentMethodGrid");
     const paymentCartSummary = document.getElementById("paymentCartSummary");
     const paymentTotal = document.getElementById("paymentTotal");
-    const paymentIntroView = document.getElementById("paymentIntroView");
+    const paymentStepLabel = document.getElementById("paymentStepLabel");
+    const paymentModalTitle = document.getElementById("paymentModalTitle");
+    const paymentModalSubtitle = document.getElementById("paymentModalSubtitle");
     const paymentDetailView = document.getElementById("paymentDetailView");
     const paymentDetailEyebrow = document.getElementById("paymentDetailEyebrow");
     const paymentDetailTitle = document.getElementById("paymentDetailTitle");
@@ -228,6 +329,7 @@
     const terminalLabel = document.getElementById("terminalLabel");
     const paymentVisual = document.getElementById("paymentVisual");
     const paymentInstructionText = document.getElementById("paymentInstructionText");
+    const backToMethodsButton = document.getElementById("backToMethodsButton");
     const simulatePaymentButton = document.getElementById("simulatePaymentButton");
     let permissionStream = null;
 
@@ -304,18 +406,35 @@
 
     function renderPaymentCartSummary() {
       if (!state.cart.length) {
-        paymentCartSummary.innerHTML = '<p class="text-white/60">Cart is empty.</p>';
+        paymentCartSummary.innerHTML = '<div class="rounded-[1.25rem] bg-white/8 px-4 py-4 text-sm text-white/70">????? ?? ????.</div>';
         paymentTotal.textContent = formatPrice(0);
         return;
       }
 
       paymentCartSummary.innerHTML = state.cart.map((item) => `
-        <div class="flex items-center justify-between gap-4 rounded-xl bg-white/6 px-4 py-3">
-          <div><p class="font-bold text-white">${item.name}</p><p class="text-xs text-white/60">${item.quantity}개</p></div>
-          <strong class="text-[#ffc72c]">${formatPrice(item.subtotal)}</strong>
+        <div class="rounded-[1.25rem] bg-white/8 px-4 py-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-black text-white">${item.name}</p>
+              <p class="mt-1 text-xs text-white/60">${item.quantity}?</p>
+            </div>
+            <strong class="text-base font-black text-[#ffc72c]">${formatPrice(item.subtotal)}</strong>
+          </div>
         </div>
       `).join("");
       paymentTotal.textContent = formatPrice(state.cart.reduce((sum, item) => sum + item.subtotal, 0));
+    }
+
+    function resetPaymentModalView() {
+      state.paymentMethod = null;
+      paymentMethodGrid.classList.remove("hidden");
+      paymentDetailView.classList.add("hidden");
+      backToMethodsButton.classList.add("hidden");
+      paymentStepLabel.textContent = "?? ??";
+      paymentModalTitle.textContent = "?? ??? ??? ???";
+      paymentModalSubtitle.textContent = "?? ?????? ?? ?? ???? ??, ????, PAYCO, ?????, ???? ? ??? ??? ???.";
+      simulatePaymentButton.disabled = false;
+      simulatePaymentButton.textContent = "??? ?? ??";
     }
 
     function openPaymentModal() {
@@ -323,7 +442,7 @@
       paymentModal.classList.remove("hidden");
       paymentModal.classList.add("flex");
       document.body.classList.add("overflow-hidden");
-      showPaymentIntro();
+      resetPaymentModalView();
       renderPaymentCartSummary();
     }
 
@@ -332,22 +451,24 @@
       paymentModal.classList.add("hidden");
       paymentModal.classList.remove("flex");
       document.body.classList.remove("overflow-hidden");
-      state.paymentMethod = null;
-      simulatePaymentButton.disabled = false;
-      simulatePaymentButton.textContent = "Complete Demo Payment";
+      resetPaymentModalView();
     }
 
-    function showPaymentIntro() {
-      paymentIntroView.classList.remove("hidden");
-      paymentDetailView.classList.add("hidden");
+    function showPaymentMethods() {
+      resetPaymentModalView();
+      renderPaymentCartSummary();
     }
 
     function selectPaymentMethod(method) {
       const config = paymentConfigs[method];
       if (!config) return;
       state.paymentMethod = method;
-      paymentIntroView.classList.add("hidden");
+      paymentMethodGrid.classList.add("hidden");
       paymentDetailView.classList.remove("hidden");
+      backToMethodsButton.classList.remove("hidden");
+      paymentStepLabel.textContent = "?? ??";
+      paymentModalTitle.textContent = config.modalTitle;
+      paymentModalSubtitle.textContent = config.modalSubtitle;
       paymentDetailEyebrow.textContent = config.eyebrow;
       paymentDetailTitle.textContent = config.label;
       paymentDetailDescription.textContent = config.description;
@@ -586,7 +707,7 @@
     });
     document.getElementById("confirmButton").addEventListener("click", openPaymentModal);
     document.getElementById("closePaymentModalButton").addEventListener("click", closePaymentModal);
-    document.getElementById("backToMethodsButton").addEventListener("click", showPaymentIntro);
+    document.getElementById("backToMethodsButton").addEventListener("click", showPaymentMethods);
     document.getElementById("simulatePaymentButton").addEventListener("click", submitOrder);
     paymentMethodGrid.querySelectorAll("button[data-method]").forEach((button) => {
       button.addEventListener("click", () => selectPaymentMethod(button.dataset.method));
