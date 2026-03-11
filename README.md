@@ -76,3 +76,10 @@ http://localhost:5000
 ## 참고
 
 현재 음성 주문 파싱은 단순 문자열 매칭 방식입니다. 이후에는 메뉴 별 별칭 확장, 숫자 표현 개선, 주문 내역 조회 API, 관리자 화면 등을 추가하기 좋습니다.
+
+## Git 협업 흐름
+
+이 저장소는 `main` 기준 브랜치 협업을 권장합니다.
+
+- 작업 가이드: `CONTRIBUTING.md`
+- PR 템플릿: `.github/PULL_REQUEST_TEMPLATE.md`

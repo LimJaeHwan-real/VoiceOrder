@@ -1,0 +1,9 @@
+.vercel
+.tools/
+.chrome-headless/
+__pycache__/
+*.pyc
+server.out.log
+server.err.log
+ui-preview.png
+ui-preview-real.png

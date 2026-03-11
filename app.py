@@ -1,7 +1,10 @@
-ï»¿from __future__ import annotations
+# -*- coding: cp949 -*-
+from __future__ import annotations
 
+import os
 import re
 import sqlite3
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -11,35 +14,39 @@ from flask import Flask, jsonify, render_template, request
 from init_db import initialize_database
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "kiosk.db"
+DB_PATH = (
+    Path(tempfile.gettempdir()) / "kiosk.db"
+    if os.getenv("VERCEL")
+    else BASE_DIR / "kiosk.db"
+)
 
 app = Flask(__name__)
 
 KOREAN_NUMBER_MAP = {
-    "ì—´ë‘": 12,
-    "ì—´í•œ": 11,
-    "ì—´": 10,
-    "ì•„í™‰": 9,
-    "ì—¬ëŸ": 8,
-    "ì¼ê³±": 7,
-    "ì—¬ì„¯": 6,
-    "ë‹¤ì„¯": 5,
-    "ë„¤": 4,
-    "ì„¸": 3,
-    "ë‘": 2,
-    "í•œ": 1,
-    "í•˜ë‚˜": 1,
-    "ë‘˜": 2,
-    "ì…‹": 3,
-    "ë„·": 4,
+    "¿­µÎ": 12,
+    "¿­ÇÑ": 11,
+    "¿­": 10,
+    "¾ÆÈ©": 9,
+    "¿©´ü": 8,
+    "ÀÏ°ö": 7,
+    "¿©¼¸": 6,
+    "´Ù¼¸": 5,
+    "³×": 4,
+    "¼¼": 3,
+    "µÎ": 2,
+    "ÇÑ": 1,
+    "ÇÏ³ª": 1,
+    "µÑ": 2,
+    "¼Â": 3,
+    "³İ": 4,
 }
 
 MENU_SYNONYMS = {
-    "ì•„ì´ìŠ¤ ì•„ë©”ë¦¬ì¹´ë…¸": ["ì•„ë©”ë¦¬ì¹´ë…¸", "ì•„ì•„", "ì•„ì´ìŠ¤ì•„ë©”ë¦¬ì¹´ë…¸"],
-    "ì¹´í˜ë¼ë–¼": ["ë¼ë–¼", "ì¹´í˜ ë¼ë–¼"],
-    "ë”¸ê¸° ìŠ¤ë¬´ë””": ["ìŠ¤ë¬´ë””", "ë”¸ê¸°ìŠ¤ë¬´ë””"],
-    "ì´ˆì½” ì¼€ì´í¬": ["ì¼€ì´í¬", "ì´ˆì½”ì¼€ì´í¬"],
-    "ë¸”ë£¨ë² ë¦¬ ë¨¸í•€": ["ë¨¸í•€", "ë¸”ë£¨ë² ë¦¬ë¨¸í•€"],
+    "¾ÆÀÌ½º ¾Æ¸Ş¸®Ä«³ë": ["¾Æ¸Ş¸®Ä«³ë", "¾Æ¾Æ", "¾ÆÀÌ½º¾Æ¸Ş¸®Ä«³ë"],
+    "Ä«Æä¶ó¶¼": ["¶ó¶¼", "Ä«Æä ¶ó¶¼"],
+    "µş±â ½º¹«µğ": ["½º¹«µğ", "µş±â½º¹«µğ"],
+    "ÃÊÄÚ ÄÉÀÌÅ©": ["ÄÉÀÌÅ©", "ÃÊÄÚÄÉÀÌÅ©"],
+    "ºí·çº£¸® ¸ÓÇÉ": ["¸ÓÇÉ", "ºí·çº£¸®¸ÓÇÉ"],
 }
 
 
@@ -74,11 +81,13 @@ def menu_aliases(menu_name: str) -> List[str]:
 
 
 def extract_quantity(snippet: str) -> int:
-    digit_match = re.search(r"(\d+)\s*(ì”|ê°œ|ì»µ)?", snippet)
+    digit_match = re.search(r"(\d+)\s*(ÀÜ|°³|ÄÅ)?", snippet)
     if digit_match:
         return max(1, int(digit_match.group(1)))
 
-    for word, value in sorted(KOREAN_NUMBER_MAP.items(), key=lambda item: len(item[0]), reverse=True):
+    for word, value in sorted(
+        KOREAN_NUMBER_MAP.items(), key=lambda item: len(item[0]), reverse=True
+    ):
         if word in snippet:
             return value
     return 1
@@ -145,7 +154,7 @@ def api_order_voice():
     text = (payload.get("text") or "").strip()
 
     if not text:
-        return jsonify({"error": "ìŒì„± ì¸ì‹ í…ìŠ¤íŠ¸ê°€ ë¹„ì–´ ìˆìŠµë‹ˆë‹¤."}), 400
+        return jsonify({"error": "À½¼º ÀÎ½Ä ÅØ½ºÆ®°¡ ºñ¾î ÀÖ½À´Ï´Ù."}), 400
 
     items = parse_voice_order(text, fetch_menus())
     total_price = sum(item["subtotal"] for item in items)
@@ -156,7 +165,7 @@ def api_order_voice():
                 "transcript": text,
                 "items": [],
                 "total_price": 0,
-                "message": "ë©”ë‰´ë¥¼ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ë§ì”€í•´ ì£¼ì„¸ìš”.",
+                "message": "¸Ş´º¸¦ Ã£Áö ¸øÇß½À´Ï´Ù. ´Ù½Ã ¸»¾¸ÇØ ÁÖ¼¼¿ä.",
             }
         ), 200
 
@@ -165,7 +174,7 @@ def api_order_voice():
             "transcript": text,
             "items": items,
             "total_price": total_price,
-            "message": "ì£¼ë¬¸ í›„ë³´ë¥¼ ì¥ë°”êµ¬ë‹ˆì— ë‹´ì•˜ìŠµë‹ˆë‹¤.",
+            "message": "ÁÖ¹® ÈÄº¸¸¦ Àå¹Ù±¸´Ï¿¡ ´ã¾Ò½À´Ï´Ù.",
         }
     )
 
@@ -176,7 +185,7 @@ def api_order_confirm():
     items = payload.get("items") or []
 
     if not items:
-        return jsonify({"error": "ì£¼ë¬¸í•  ìƒí’ˆì´ ì—†ìŠµë‹ˆë‹¤."}), 400
+        return jsonify({"error": "ÁÖ¹®ÇÒ »óÇ°ÀÌ ¾ø½À´Ï´Ù."}), 400
 
     menus = {menu["id"]: menu for menu in fetch_menus()}
     normalized_items = []
@@ -187,7 +196,7 @@ def api_order_confirm():
         quantity = int(item.get("quantity", 0))
 
         if menu_id not in menus or quantity <= 0:
-            return jsonify({"error": "ìœ íš¨í•˜ì§€ ì•Šì€ ì£¼ë¬¸ í•­ëª©ì´ í¬í•¨ë˜ì–´ ìˆìŠµë‹ˆë‹¤."}), 400
+            return jsonify({"error": "À¯È¿ÇÏÁö ¾ÊÀº ÁÖ¹® Ç×¸ñÀÌ Æ÷ÇÔµÇ¾î ÀÖ½À´Ï´Ù."}), 400
 
         menu = menus[menu_id]
         subtotal = menu["price"] * quantity
@@ -224,7 +233,7 @@ def api_order_confirm():
             "order_id": order_id,
             "total_price": total_price,
             "created_at": created_at,
-            "message": "ì£¼ë¬¸ì´ ì €ì¥ë˜ì—ˆìŠµë‹ˆë‹¤.",
+            "message": "ÁÖ¹®ÀÌ ÀúÀåµÇ¾ú½À´Ï´Ù.",
         }
     )
 
@@ -232,3 +241,5 @@ def api_order_confirm():
 if __name__ == "__main__":
     ensure_database()
     app.run(debug=True, host="0.0.0.0", port=5000)
+
+
