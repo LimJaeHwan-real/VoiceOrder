@@ -208,7 +208,7 @@
                 <p class="text-[12px] font-semibold uppercase tracking-[0.24em] text-[#7c8983]">Order Panel</p>
                 <h3 class="mt-2 text-[28px] font-black tracking-[-0.05em] text-[#18231f]">장바구니</h3>
               </div>
-              <span id="channelBadge" class="rounded-full bg-[#eef5f0] px-4 py-2 text-[12px] font-semibold text-[#195743]">터치 주문</span>
+              <button id="channelBadge" class="rounded-full bg-[#eef5f0] px-4 py-2 text-[12px] font-semibold text-[#195743] disabled:cursor-default disabled:opacity-70">터치 주문</button>
             </div>
             <div class="mt-5 rounded-[26px] border border-[#d7e2db] bg-white/75 p-4">
               <div class="flex items-center justify-between gap-3">
@@ -216,7 +216,6 @@
                   <p class="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#7c8983]">Service Mode</p>
                   <p class="mt-2 text-[17px] font-bold text-[#18231f]">매장 식사 / 테이크아웃</p>
                 </div>
-                <button id="reopenVoiceFlowButton" class="hidden rounded-full bg-[#eef5f0] px-4 py-2 text-[12px] font-semibold text-[#195743]">음성 주문 다시 열기</button>
               </div>
               <div id="serviceModeButtons" class="mt-4 grid grid-cols-2 gap-2"></div>
             </div>
@@ -460,7 +459,6 @@
       voiceSelectionCloseButton: document.getElementById("voiceSelectionCloseButton"),
       menuGrid: document.getElementById("menuGrid"),
       channelBadge: document.getElementById("channelBadge"),
-      reopenVoiceFlowButton: document.getElementById("reopenVoiceFlowButton"),
       serviceModeButtons: document.getElementById("serviceModeButtons"),
       clearCartButton: document.getElementById("clearCartButton"),
       cartItems: document.getElementById("cartItems"),
@@ -674,8 +672,9 @@
     }
 
     function renderChannelBadge() {
-      refs.channelBadge.textContent = state.orderChannel === "voice" ? "음성 주문" : "터치 주문";
-      refs.reopenVoiceFlowButton.classList.toggle("hidden", state.orderChannel !== "voice");
+      const isVoiceOrder = state.orderChannel === "voice";
+      refs.channelBadge.textContent = isVoiceOrder ? "음성 주문 다시 열기" : "터치 주문";
+      refs.channelBadge.disabled = !isVoiceOrder;
     }
 
     function renderServiceModeButtons() {
@@ -1862,7 +1861,10 @@
       setPanelMessage("주문을 초기화했습니다.");
     });
 
-    refs.reopenVoiceFlowButton.addEventListener("click", () => {
+    refs.channelBadge.addEventListener("click", () => {
+      if (state.orderChannel !== "voice") {
+        return;
+      }
       openVoiceFlowStep(state.cart.length ? 2 : 1, "", { autoListen: true });
     });
 
