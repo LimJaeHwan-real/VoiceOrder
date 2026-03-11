@@ -261,8 +261,11 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
         compact_segment = normalize_text(segment)
 
         if not accepted:
-            unmatched_segments.append(segment)
-            continue
+            fuzzy_candidate = fuzzy_match_menu(segment, menus)
+            if fuzzy_candidate is None:
+                unmatched_segments.append(segment)
+                continue
+            accepted = [fuzzy_candidate]
 
         for candidate in accepted:
             menu = candidate["menu"]

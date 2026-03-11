@@ -438,6 +438,11 @@
       },
     };
 
+    const VOICE_LISTEN_WINDOW_MS = 20000;
+    const VOICE_FINALIZE_IDLE_MS = 1800;
+    const VOICE_RESTART_DELAY_MS = 220;
+    const RECOVERABLE_SPEECH_ERRORS = new Set(["aborted", "no-speech"]);
+
     const state = {
       menus: [],
       menuGroups: [],
@@ -882,12 +887,8 @@
         window.speechSynthesis.speak(utterance);
       };
 
-      if (state.listening && state.speechSession?.kind === "voice-flow" && state.recognition) {
-        try {
-          state.recognition.stop();
-        } catch (error) {
-          // ignore recognition stop race
-        }
+      if (state.speechSession?.kind === "voice-flow") {
+        cancelSpeechSession();
         window.setTimeout(beginSpeak, 160);
         return;
       }
@@ -910,8 +911,13 @@
       refs.voiceFlowSubtitle.textContent = stepMeta.subtitle;
       refs.voiceFlowMessage.textContent = state.voiceFlow.message || stepMeta.message;
       refs.voiceFlowTranscript.textContent = state.voiceFlow.transcript || "인식 결과는 화면 하단 자막에서 확인할 수 있습니다.";
-      refs.voiceFlowListenButton.textContent = state.listening && state.speechSession?.kind === "voice-flow" ? "듣는 중..." : "음성으로 답하기";
-      refs.voiceFlowListenButton.disabled = !state.recognition || state.listening;
+      const voiceFlowSessionActive = state.speechSession?.kind === "voice-flow";
+      refs.voiceFlowListenButton.textContent = state.listening && voiceFlowSessionActive
+        ? "듣는 중..."
+        : voiceFlowSessionActive
+          ? "분석 중..."
+          : "음성으로 답하기";
+      refs.voiceFlowListenButton.disabled = !state.recognition || Boolean(state.speechSession);
 
       if (state.voiceFlow.step === 2) {
         refs.voiceFlowChoices.innerHTML = `
@@ -1122,13 +1128,7 @@
     }
 
     function resetOrderState(options = {}) {
-      if (state.recognition && state.listening) {
-        try {
-          state.recognition.stop();
-        } catch (error) {
-          // ignore recognition stop race
-        }
-      }
+      cancelSpeechSession();
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
@@ -1198,6 +1198,7 @@
     }
 
     function closeVoiceFlowModal() {
+      cancelSpeechSession();
       state.voiceGuideToken += 1;
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
@@ -1483,6 +1484,168 @@
       stream.getTracks().forEach((track) => track.stop());
     }
 
+    function clearSpeechSessionTimers(session = state.speechSession) {
+      if (!session) {
+        return;
+      }
+      ["deadlineTimer", "finalizeTimer", "restartTimer"].forEach((key) => {
+        if (session[key]) {
+          clearTimeout(session[key]);
+          session[key] = null;
+        }
+      });
+    }
+
+    function resetSpeechButtons() {
+      const hasSession = Boolean(state.speechSession);
+      const isSearchSession = state.speechSession?.kind === "search";
+      refs.searchVoiceButton.textContent = state.listening && isSearchSession
+        ? "듣는 중..."
+        : isSearchSession
+          ? "분석 중..."
+          : "음성 필터";
+      refs.searchVoiceButton.disabled = !state.recognition || hasSession;
+    }
+
+    function showSpeechSessionMessage(kind, message) {
+      if (kind === "search") {
+        refs.searchVoiceStatus.textContent = message;
+        resetSpeechButtons();
+        return;
+      }
+      state.subtitleText = message;
+      renderVoiceSubtitle();
+      openVoiceFlowStep(state.voiceFlow.step, message, { speak: false, autoListen: false });
+    }
+
+    async function completeSpeechSession(session) {
+      if (!session || session.completed) {
+        return;
+      }
+      session.completed = true;
+      clearSpeechSessionTimers(session);
+      if (state.speechSession === session) {
+        state.speechSession = null;
+      }
+      state.listening = false;
+      resetSpeechButtons();
+      renderVoiceFlowModal();
+      renderVoiceSubtitle();
+
+      const transcript = (session.transcript || "").trim();
+      if (session.finalMessage) {
+        showSpeechSessionMessage(session.kind, session.finalMessage);
+        return;
+      }
+
+      if (!transcript) {
+        const message = session.timeoutMessage || (session.kind === "search"
+          ? "20초 동안 음성을 기다렸지만 검색어를 듣지 못했습니다. 다시 시도해 주세요."
+          : "20초 동안 음성을 기다렸지만 인식된 내용이 없습니다. 다시 말씀해 주세요.");
+        showSpeechSessionMessage(session.kind, message);
+        return;
+      }
+
+      try {
+        if (session.kind === "search") {
+          await handleSearchVoiceTranscript(transcript);
+        } else if (session.kind === "voice-flow") {
+          await handleVoiceFlowTranscript(transcript);
+        }
+      } catch (error) {
+        showSpeechSessionMessage(session.kind, error.message || "음성 인식 처리 중 오류가 발생했습니다.");
+      }
+    }
+
+    function finalizeSpeechSession(options = {}) {
+      const session = state.speechSession;
+      if (!session || session.finalizing) {
+        return;
+      }
+      session.finalizing = true;
+      session.finalMessage = options.message || "";
+      session.timeoutMessage = options.timeoutMessage || session.timeoutMessage || "";
+      clearSpeechSessionTimers(session);
+
+      if (state.recognition && state.listening) {
+        try {
+          state.recognition.stop();
+          return;
+        } catch (error) {
+          // ignore recognition stop race
+        }
+      }
+
+      void completeSpeechSession(session);
+    }
+
+    function scheduleSpeechSessionDeadline(session) {
+      clearTimeout(session.deadlineTimer);
+      const remaining = Math.max(0, session.deadlineAt - Date.now());
+      session.deadlineTimer = window.setTimeout(() => {
+        if (state.speechSession !== session || session.finalizing) {
+          return;
+        }
+        finalizeSpeechSession({
+          timeoutMessage: session.kind === "search"
+            ? "20초 동안 음성을 기다렸지만 검색어를 듣지 못했습니다. 다시 시도해 주세요."
+            : "20초 동안 음성을 기다렸지만 인식된 내용이 없습니다. 다시 말씀해 주세요.",
+        });
+      }, remaining);
+    }
+
+    function scheduleSpeechSessionFinalize(session) {
+      clearTimeout(session.finalizeTimer);
+      session.finalizeTimer = window.setTimeout(() => {
+        if (state.speechSession !== session || session.finalizing) {
+          return;
+        }
+        finalizeSpeechSession();
+      }, VOICE_FINALIZE_IDLE_MS);
+    }
+
+    function restartSpeechSession(session) {
+      if (state.speechSession !== session || session.finalizing || state.listening || Date.now() >= session.deadlineAt) {
+        return;
+      }
+      clearTimeout(session.restartTimer);
+      session.restartTimer = window.setTimeout(() => {
+        if (state.speechSession !== session || session.finalizing || state.listening) {
+          return;
+        }
+        try {
+          state.recognition.start();
+        } catch (error) {
+          finalizeSpeechSession({
+            message: session.transcript ? "" : "마이크를 다시 시작하지 못했습니다. 다시 시도해 주세요.",
+          });
+        }
+      }, VOICE_RESTART_DELAY_MS);
+    }
+
+    function cancelSpeechSession() {
+      const session = state.speechSession;
+      if (!session) {
+        return;
+      }
+      session.finalMessage = "";
+      session.timeoutMessage = "";
+      clearSpeechSessionTimers(session);
+      session.finalizing = true;
+
+      if (state.recognition && state.listening) {
+        try {
+          state.recognition.stop();
+        } catch (error) {
+          // ignore recognition stop race
+        }
+      }
+
+      state.speechSession = null;
+      state.listening = false;
+      resetSpeechButtons();
+    }
+
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if ("speechSynthesis" in window) {
@@ -1499,29 +1662,43 @@
       const recognition = new SpeechRecognition();
       recognition.lang = "ko-KR";
       recognition.interimResults = true;
-      recognition.continuous = false;
+      recognition.continuous = true;
+      recognition.maxAlternatives = 3;
 
       recognition.onstart = () => {
+        const session = state.speechSession;
+        if (session) {
+          clearTimeout(session.restartTimer);
+          session.restartTimer = null;
+        }
         state.listening = true;
-        if (state.speechSession?.kind === "voice-flow") {
+        resetSpeechButtons();
+        if (session?.kind === "voice-flow") {
           state.subtitleText = state.subtitleText || "듣고 있습니다...";
           renderVoiceSubtitle();
         }
         renderVoiceFlowModal();
-        refs.searchVoiceButton.textContent = state.speechSession?.kind === "search" ? "듣는 중..." : "음성 필터";
-        refs.searchVoiceButton.disabled = state.speechSession?.kind === "search";
       };
 
-      recognition.onresult = async (event) => {
+      recognition.onresult = (event) => {
+        const session = state.speechSession;
+        if (!session) {
+          return;
+        }
+
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join(" ")
           .trim();
 
-        if (state.speechSession?.kind === "search") {
+        session.transcript = transcript;
+        session.heardSpeech = session.heardSpeech || Boolean(transcript);
+        session.lastActivityAt = Date.now();
+
+        if (session.kind === "search") {
           refs.searchVoiceStatus.textContent = transcript || "인식 중입니다...";
         }
-        if (state.speechSession?.kind === "voice-flow") {
+        if (session.kind === "voice-flow") {
           state.voiceFlow.transcript = transcript;
           state.subtitleText = transcript || "듣고 있습니다...";
           renderVoiceFlowModal();
@@ -1530,50 +1707,75 @@
 
         const lastResult = event.results[event.results.length - 1];
         if (lastResult?.isFinal && transcript) {
-          try {
-            if (state.speechSession?.kind === "search") {
-              await handleSearchVoiceTranscript(transcript);
-            } else if (state.speechSession?.kind === "voice-flow") {
-              await handleVoiceFlowTranscript(transcript);
-            }
-          } catch (error) {
-            const message = error.message || "음성 인식 처리 중 오류가 발생했습니다.";
-            if (state.speechSession?.kind === "search") {
-              refs.searchVoiceStatus.textContent = message;
-            } else {
-              state.subtitleText = message;
-              renderVoiceSubtitle();
-              openVoiceFlowStep(state.voiceFlow.step, message, { speak: false, autoListen: false });
-            }
-          }
+          scheduleSpeechSessionFinalize(session);
         }
       };
 
       recognition.onerror = (event) => {
-        const message = `음성 인식 오류: ${event.error}`;
-        if (state.speechSession?.kind === "search") {
-          refs.searchVoiceStatus.textContent = message;
-        } else {
-          state.subtitleText = message;
-          renderVoiceSubtitle();
-          openVoiceFlowStep(state.voiceFlow.step, message, { speak: false, autoListen: false });
+        const session = state.speechSession;
+        if (!session) {
+          return;
         }
+        if (session.finalizing && event.error === "aborted") {
+          return;
+        }
+        if (RECOVERABLE_SPEECH_ERRORS.has(event.error) && Date.now() < session.deadlineAt) {
+          if (!session.transcript) {
+            if (session.kind === "search") {
+              refs.searchVoiceStatus.textContent = "계속 듣고 있습니다...";
+            } else {
+              state.subtitleText = "계속 듣고 있습니다...";
+              renderVoiceSubtitle();
+            }
+          }
+          return;
+        }
+
+        const message = event.error === "not-allowed" || event.error === "service-not-allowed"
+          ? "마이크 권한이 필요합니다. 브라우저 권한을 확인해 주세요."
+          : event.error === "audio-capture"
+            ? "마이크를 찾지 못했습니다. 입력 장치를 확인해 주세요."
+            : `음성 인식 오류: ${event.error}`;
+
+        finalizeSpeechSession({
+          message: session.transcript ? "" : message,
+        });
       };
 
       recognition.onend = () => {
+        const session = state.speechSession;
         state.listening = false;
-        state.speechSession = null;
-        refs.searchVoiceButton.textContent = "음성 필터";
-        refs.searchVoiceButton.disabled = false;
+        resetSpeechButtons();
         renderVoiceFlowModal();
         renderVoiceSubtitle();
+
+        if (!session) {
+          return;
+        }
+        if (session.finalizing) {
+          void completeSpeechSession(session);
+          return;
+        }
+        if (session.finalizeTimer) {
+          return;
+        }
+        if (Date.now() < session.deadlineAt) {
+          restartSpeechSession(session);
+          return;
+        }
+        finalizeSpeechSession({
+          timeoutMessage: session.kind === "search"
+            ? "20초 동안 음성을 기다렸지만 검색어를 듣지 못했습니다. 다시 시도해 주세요."
+            : "20초 동안 음성을 기다렸지만 인식된 내용이 없습니다. 다시 말씀해 주세요.",
+        });
       };
 
       state.recognition = recognition;
+      resetSpeechButtons();
     }
 
     async function startSpeech(kind, options = {}) {
-      if (!state.recognition || state.listening) {
+      if (!state.recognition || state.listening || state.speechSession) {
         return;
       }
 
@@ -1586,17 +1788,37 @@
         if (kind === "search") {
           refs.searchVoiceStatus.textContent = "마이크 권한을 확인하고 있습니다...";
         } else {
-          state.subtitleText = "듣고 있습니다...";
+          state.subtitleText = "20초 동안 듣고 있습니다...";
           renderVoiceSubtitle();
           if (!options.silent && state.voiceFlow.step !== 1) {
-            state.voiceFlow.message = "마이크 권한을 확인하고 있습니다...";
+            state.voiceFlow.message = "20초 동안 말씀을 기다리고 있습니다...";
             renderVoiceFlowModal();
           }
         }
         await ensureMicrophonePermission();
-        state.speechSession = { kind };
+        const startedAt = Date.now();
+        state.speechSession = {
+          kind,
+          transcript: "",
+          heardSpeech: false,
+          startedAt,
+          deadlineAt: startedAt + VOICE_LISTEN_WINDOW_MS,
+          finalizing: false,
+          completed: false,
+          finalMessage: "",
+          timeoutMessage: "",
+          deadlineTimer: null,
+          finalizeTimer: null,
+          restartTimer: null,
+        };
+        resetSpeechButtons();
+        scheduleSpeechSessionDeadline(state.speechSession);
         state.recognition.start();
       } catch (error) {
+        clearSpeechSessionTimers();
+        state.speechSession = null;
+        state.listening = false;
+        resetSpeechButtons();
         const message = error.message || "마이크 권한을 확인하지 못했습니다.";
         if (kind === "search") {
           refs.searchVoiceStatus.textContent = message;
