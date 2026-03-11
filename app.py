@@ -50,7 +50,7 @@ def api_order_voice():
                     else "메뉴를 찾지 못했습니다. 다시 말씀해 주세요."
                 ),
             }
-        ), 200
+        )
 
     return jsonify(
         {

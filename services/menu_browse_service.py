@@ -6,8 +6,8 @@ from services.voice_order_service import normalize_text
 
 INTENT_KEYWORDS = {
     "coffee": ["커피", "아메리카노", "라떼", "카페", "coffee"],
-    "tea": ["티", "차", "tea", "음료", "주스", "스무디"],
-    "snack": ["디저트", "빵", "케이크", "머핀", "간식", "달달한거", "달달한 거", "dessert"],
+    "non-coffee": ["논커피", "티", "차", "tea", "음료", "주스", "스무디", "에이드"],
+    "dessert": ["디저트", "빵", "케이크", "머핀", "간식", "달달한거", "달달한 거", "dessert", "샌드위치"],
 }
 
 TAG_KEYWORDS = {
@@ -62,7 +62,7 @@ def browse_menus_by_intent(text: str, menus: List[Dict]) -> Dict | None:
         for tag in tags:
             if tag in menu_tags:
                 score += 3
-        if "sweet" in tags and menu_category == "snack":
+        if "sweet" in tags and menu_category == "dessert":
             score += 1
         if "fruit" in tags and {"strawberry", "blueberry", "peach"} & menu_tags:
             score += 1
@@ -86,7 +86,12 @@ def browse_menus_by_intent(text: str, menus: List[Dict]) -> Dict | None:
     if tags and not categories:
         title = "원하시는 느낌과 가까운 메뉴를 보여드릴게요."
     elif categories:
-        title = f"{categories[0].title()} 계열 메뉴를 보여드릴게요."
+        category_title = {
+            "coffee": "커피",
+            "non-coffee": "논커피",
+            "dessert": "디저트",
+        }.get(categories[0], categories[0])
+        title = f"{category_title} 메뉴를 보여드릴게요."
     else:
         title = "관련 메뉴를 보여드릴게요."
 
