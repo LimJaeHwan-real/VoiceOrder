@@ -269,13 +269,12 @@
             <section id="browseRecommendationPanel" class="mt-5 hidden rounded-[28px] border border-[#cfe0d3] bg-white/86 p-5 shadow-[0_18px_44px_rgba(18,59,46,0.08)]">
               <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p class="text-[12px] font-semibold uppercase tracking-[0.22em] text-[#5d7b68]">Voice Browse</p>
-                  <h3 id="browseRecommendationTitle" class="mt-2 text-[24px] font-black tracking-[-0.04em] text-[#1e2a24]">관련 메뉴를 보여드릴게요.</h3>
-                  <p id="browseRecommendationMessage" class="mt-2 text-[14px] leading-6 text-[#637067]">말씀하신 조건과 가까운 메뉴를 찾았습니다.</p>
+                  <p class="text-[12px] font-semibold uppercase tracking-[0.22em] text-[#5d7b68]">Filtered View</p>
+                  <h3 id="browseRecommendationTitle" class="mt-2 text-[24px] font-black tracking-[-0.04em] text-[#1e2a24]">조건에 맞는 메뉴로 필터링했어요.</h3>
+                  <p id="browseRecommendationMessage" class="mt-2 text-[14px] leading-6 text-[#637067]">조건에 맞는 메뉴를 아래 메뉴판에서 보여주고 있습니다.</p>
                 </div>
                 <button id="clearBrowseButton" class="rounded-full bg-[#edf3ee] px-4 py-2 text-[13px] font-semibold text-[#1f6a4d]">전체 메뉴 보기</button>
               </div>
-              <div id="browseRecommendationList" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"></div>
             </section>
 
             <div id="menuGrid" class="mt-5 grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
@@ -341,13 +340,16 @@
                 <p id="transcriptPreview" class="mt-2 text-[13px] leading-6 text-white/82">아직 없음</p>
               </div>
 
-              <div class="mt-3 rounded-[22px] bg-[#0f281f] p-4">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/58">실시간 인식 텍스트</p>
-                <p id="liveTranscript" class="mt-2 min-h-[88px] text-[14px] leading-6 text-white/88">버튼을 누르면 음성 인식이 시작됩니다.</p>
-              </div>
-
-              <p id="voiceMessage" class="mt-4 text-[13px] leading-6 text-white/76">아직 분석된 주문이 없습니다.</p>
+            <div class="mt-3 rounded-[22px] bg-[#0f281f] p-4">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/58">실시간 인식 텍스트</p>
+              <p id="liveTranscript" class="mt-2 min-h-[88px] text-[14px] leading-6 text-white/88">버튼을 누르면 음성 인식이 시작됩니다.</p>
             </div>
+
+            <p id="voiceMessage" class="mt-4 text-[13px] leading-6 text-white/76">아직 분석된 주문이 없습니다.</p>
+            <button id="undoLastVoiceButton" class="mt-3 hidden rounded-full bg-white/12 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-white/18">
+              방금 담은 항목 되돌리기
+            </button>
+          </div>
 
             <section class="mt-5">
               <div class="flex items-center justify-between">
@@ -558,6 +560,7 @@
       menus: [],
       cart: [],
       transcript: "",
+      lastVoiceOrder: null,
       recognition: null,
       listening: false,
       browseResult: null,
@@ -577,6 +580,7 @@
     const liveTranscript = document.getElementById("liveTranscript");
     const transcriptPreview = document.getElementById("transcriptPreview");
     const voiceMessage = document.getElementById("voiceMessage");
+    const undoLastVoiceButton = document.getElementById("undoLastVoiceButton");
     const confirmMessage = document.getElementById("confirmMessage");
     const speechStatus = document.getElementById("speechStatus");
     const supportBadge = document.getElementById("supportBadge");
@@ -586,7 +590,6 @@
     const browseRecommendationPanel = document.getElementById("browseRecommendationPanel");
     const browseRecommendationTitle = document.getElementById("browseRecommendationTitle");
     const browseRecommendationMessage = document.getElementById("browseRecommendationMessage");
-    const browseRecommendationList = document.getElementById("browseRecommendationList");
     const paymentModal = document.getElementById("paymentModal");
     const paymentMethodGrid = document.getElementById("paymentMethodGrid");
     const paymentCartSummary = document.getElementById("paymentCartSummary");
@@ -669,36 +672,12 @@
       const browse = state.browseResult;
       if (!browse) {
         browseRecommendationPanel.classList.add("hidden");
-        browseRecommendationList.innerHTML = "";
         return;
       }
 
       browseRecommendationPanel.classList.remove("hidden");
-      browseRecommendationTitle.textContent = browse.title || "관련 메뉴를 보여드릴게요.";
-      browseRecommendationMessage.textContent = browse.message || "말씀하신 조건과 가까운 메뉴를 찾았습니다.";
-
-      if (!Array.isArray(browse.menus) || !browse.menus.length) {
-        browseRecommendationList.innerHTML = '<div class="rounded-[22px] border border-dashed border-[#b5c8ba] bg-white px-4 py-10 text-center text-[#60756a] sm:col-span-2 xl:col-span-4">해당 조건에 맞는 메뉴가 아직 없습니다.</div>';
-        return;
-      }
-
-      browseRecommendationList.innerHTML = browse.menus.map((menu) => `
-        <article class="rounded-[22px] border border-[#d6e1d8] bg-[#fbfcf9] p-4">
-          <div class="flex items-center gap-3">
-            <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[18px] bg-[#f4efe4]">
-              <img src="${menu.image_url}" alt="${menu.name}" class="h-full w-full object-cover">
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-[16px] font-black tracking-[-0.03em] text-[#1e2a24]">${menu.name}</p>
-              <p class="mt-1 text-[13px] leading-5 text-[#6d776f]">${menu.description || ""}</p>
-            </div>
-          </div>
-          <div class="mt-4 flex items-center justify-between gap-3">
-            <span class="text-[15px] font-semibold text-[#1f6a4d]">${formatPrice(menu.price)}</span>
-            <button class="rounded-full bg-[#0f6a33] px-4 py-2 text-[13px] font-semibold text-white" onclick="addMenuToCart(${menu.id})">담기</button>
-          </div>
-        </article>
-      `).join("");
+      browseRecommendationTitle.textContent = browse.title || "조건에 맞는 메뉴로 필터링했어요.";
+      browseRecommendationMessage.textContent = browse.message || "조건에 맞는 메뉴를 아래 메뉴판에서 보여주고 있습니다.";
     }
 
     function clearBrowseResult(options = {}) {
@@ -751,8 +730,8 @@
     function renderResultSummary(items) {
       if (state.browseResult) {
         resultSummary.textContent = items.length
-          ? `음성 탐색 결과 ${items.length}개를 보여주고 있습니다.`
-          : "추천 조건에 맞는 메뉴가 없습니다.";
+          ? `필터링 결과 ${items.length}개를 보여주고 있습니다.`
+          : "조건에 맞는 메뉴가 없습니다.";
         return;
       }
 
@@ -832,6 +811,7 @@
               <div class="text-right">
                 <p class="text-[16px] font-black text-[#1f6a4d]">${formatPrice(item.subtotal)}</p>
                 <div class="mt-3 flex items-center justify-end gap-2">
+                  <button class="rounded-full bg-[#f5e7e2] px-3 py-2 text-[12px] font-semibold text-[#9a4023]" onclick="removeCartItem(${item.menu_id})">전체 취소</button>
                   <button class="flex h-9 w-9 items-center justify-center rounded-full bg-[#edf3ee] text-[18px] font-bold text-[#1f6a4d]" onclick="changeQuantity(${item.menu_id}, -1)">-</button>
                   <button class="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f6a4d] text-[18px] font-bold text-white" onclick="changeQuantity(${item.menu_id}, 1)">+</button>
                 </div>
@@ -848,6 +828,7 @@
       cartCount.textContent = `${count}개 상품`;
       confirmButton.disabled = state.cart.length === 0;
       renderPaymentCartSummary();
+      renderVoiceUndoState();
     }
 
     function renderPaymentCartSummary() {
@@ -869,6 +850,14 @@
         </div>
       `).join("");
       paymentTotal.textContent = formatPrice(state.cart.reduce((sum, item) => sum + item.subtotal, 0));
+    }
+
+    function renderVoiceUndoState() {
+      if (!state.lastVoiceOrder || !Array.isArray(state.lastVoiceOrder.items) || !state.lastVoiceOrder.items.length) {
+        undoLastVoiceButton.classList.add("hidden");
+        return;
+      }
+      undoLastVoiceButton.classList.remove("hidden");
     }
 
     function resetPaymentModalView() {
@@ -952,10 +941,65 @@
         .map((item) => {
           if (item.menu_id !== menuId) return item;
           const quantity = item.quantity + delta;
-          return { ...item, quantity, subtotal: item.price * quantity };
+          return {
+            ...item,
+            quantity,
+            subtotal: item.price * quantity,
+          };
         })
         .filter((item) => item.quantity > 0);
       renderCart();
+    }
+
+    function removeCartItem(menuId) {
+      state.cart = state.cart.filter((item) => item.menu_id !== menuId);
+      renderCart();
+    }
+
+    function removeCartQuantity(menuId, quantityToRemove) {
+      let removed = 0;
+      state.cart = state.cart
+        .map((item) => {
+          if (item.menu_id !== menuId) return item;
+          const removable = Math.min(quantityToRemove, item.quantity);
+          removed = removable;
+          const nextQuantity = item.quantity - removable;
+          if (nextQuantity <= 0) {
+            return null;
+          }
+          return {
+            ...item,
+            quantity: nextQuantity,
+            subtotal: item.price * nextQuantity,
+          };
+        })
+        .filter(Boolean);
+      renderCart();
+      return removed;
+    }
+
+    function cancelCartItems(items) {
+      let removedTotal = 0;
+      items.forEach((item) => {
+        removedTotal += removeCartQuantity(item.menu_id, item.quantity || 0);
+      });
+      return removedTotal;
+    }
+
+    function undoLastVoiceOrder() {
+      if (!state.lastVoiceOrder || !Array.isArray(state.lastVoiceOrder.items) || !state.lastVoiceOrder.items.length) {
+        voiceMessage.textContent = "되돌릴 최근 담기 내역이 없습니다.";
+        return;
+      }
+
+      state.lastVoiceOrder.items.forEach((item) => {
+        removeCartQuantity(item.menu_id, item.quantity);
+      });
+
+      voiceMessage.textContent = "방금 담은 항목을 되돌렸습니다.";
+      confirmMessage.textContent = "방금 담은 항목을 장바구니에서 되돌렸습니다.";
+      state.lastVoiceOrder = null;
+      renderVoiceUndoState();
     }
 
     function setActiveCategory(category) {
@@ -1035,13 +1079,37 @@
       }
 
       voiceMessage.textContent = data.message || "주문 분석 완료";
+      let handledMutation = false;
+
+      if (Array.isArray(data.cancel_items) && data.cancel_items.length) {
+        const removedTotal = cancelCartItems(data.cancel_items);
+        if (removedTotal > 0) {
+          state.lastVoiceOrder = null;
+          renderVoiceUndoState();
+          confirmMessage.textContent = "장바구니에서 요청한 항목을 취소했습니다.";
+          voiceMessage.textContent = data.message || "취소할 주문 후보를 확인했습니다.";
+        } else {
+          voiceMessage.textContent = "장바구니에서 취소할 메뉴를 찾지 못했습니다.";
+        }
+        handledMutation = true;
+      }
+
       if (Array.isArray(data.items) && data.items.length) {
+        state.lastVoiceOrder = {
+          transcript: text,
+          items: data.items.map((item) => ({ ...item })),
+        };
         mergeCartItems(data.items);
         if (data.browse_result) {
           applyBrowseResult(data.browse_result);
         } else {
           clearBrowseResult();
         }
+        return;
+      }
+
+      if (handledMutation) {
+        clearBrowseResult();
         return;
       }
 
@@ -1182,6 +1250,7 @@
       clearBrowseResult({ resetCategory: true });
       voiceMessage.textContent = "전체 메뉴 보기로 돌아왔습니다.";
     });
+    document.getElementById("undoLastVoiceButton").addEventListener("click", undoLastVoiceOrder);
     document.getElementById("closePaymentModalButton").addEventListener("click", closePaymentModal);
     document.getElementById("backToMethodsButton").addEventListener("click", showPaymentMethods);
     document.getElementById("simulatePaymentButton").addEventListener("click", submitOrder);

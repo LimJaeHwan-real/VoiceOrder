@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from difflib import SequenceMatcher
 import re
 from typing import Dict, List
 
@@ -39,10 +40,19 @@ MENU_SYNONYMS = {
 SEGMENT_SPLIT_PATTERN = re.compile(
     r"(?:이랑|랑|하고|하구|그리고|그리구|또|또는|이랑은|이랑요|이랑그거|,|/|\+|및)"
 )
+CANCEL_KEYWORDS = ["취소", "빼줘", "빼 주", "삭제", "제거", "지워", "빼고", "주문취소"]
+TRAILING_FILLER_PATTERN = re.compile(
+    r"(추가해줘|추가해 주|추가해|추가|주세요|주세용|줘요|해줘|해 주|먹고싶어|먹고 싶어|마시고싶어|마시고 싶어|부탁해|부탁드립니다)$"
+)
 
 
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", "", text.lower())
+
+
+def is_cancel_request(text: str) -> bool:
+    compact_text = normalize_text(text)
+    return any(normalize_text(keyword) in compact_text for keyword in CANCEL_KEYWORDS)
 
 
 def menu_aliases(menu_name: str) -> List[str]:
@@ -72,6 +82,16 @@ def split_voice_segments(text: str) -> List[str]:
         if cleaned:
             segments.append(cleaned)
     return segments or [text.strip()]
+
+
+def trim_segment_noise(text: str) -> str:
+    cleaned = text.strip()
+    while cleaned:
+        updated = TRAILING_FILLER_PATTERN.sub("", cleaned).strip(" ,.!?~")
+        if updated == cleaned:
+            break
+        cleaned = updated
+    return cleaned
 
 
 def find_order_candidates(text: str, menus: List[Dict]) -> List[Dict]:
@@ -106,6 +126,36 @@ def find_order_candidates(text: str, menus: List[Dict]) -> List[Dict]:
     return accepted
 
 
+def fuzzy_match_menu(text: str, menus: List[Dict], threshold: float = 0.74) -> Dict | None:
+    compact_text = normalize_text(text)
+    if not compact_text:
+        return None
+
+    best_menu = None
+    best_alias = None
+    best_score = 0.0
+    for menu in menus:
+        for alias in menu_aliases(menu["name"]):
+            score = SequenceMatcher(None, compact_text, alias).ratio()
+            if compact_text in alias or alias in compact_text:
+                score = max(score, 0.9)
+            if score > best_score:
+                best_score = score
+                best_menu = menu
+                best_alias = alias
+
+    if best_menu is None or best_score < threshold:
+        return None
+
+    return {
+        "menu": best_menu,
+        "alias": best_alias,
+        "start": 0,
+        "end": len(compact_text),
+        "score": best_score,
+    }
+
+
 def extract_unmatched_text(text: str, matches: List[Dict]) -> str:
     compact_text = normalize_text(text)
     if not matches:
@@ -127,15 +177,23 @@ def extract_unmatched_text(text: str, matches: List[Dict]) -> str:
 
 def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
     matches: List[Dict] = []
+    cancel_matches: List[Dict] = []
     unmatched_segments: List[str] = []
 
     for segment in split_voice_segments(text):
+        segment = trim_segment_noise(segment)
+        if not segment:
+            continue
+        segment_is_cancel = is_cancel_request(segment)
         accepted = find_order_candidates(segment, menus)
         compact_segment = normalize_text(segment)
 
         if not accepted:
-            unmatched_segments.append(segment)
-            continue
+            fuzzy_candidate = fuzzy_match_menu(segment, menus)
+            if fuzzy_candidate is None:
+                unmatched_segments.append(segment)
+                continue
+            accepted = [fuzzy_candidate]
 
         for candidate in accepted:
             menu = candidate["menu"]
@@ -144,7 +202,8 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
             context = compact_segment[window_start:window_end]
             quantity = extract_quantity(context)
 
-            matches.append(
+            target_list = cancel_matches if segment_is_cancel else matches
+            target_list.append(
                 {
                     "menu_id": menu["id"],
                     "name": menu["name"],
@@ -159,17 +218,20 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
         if len(remaining_text) >= 2:
             unmatched_segments.append(remaining_text)
 
-    deduped: Dict[int, Dict] = {}
-    for item in matches:
-        existing = deduped.get(item["menu_id"])
-        if existing:
-            existing["quantity"] += item["quantity"]
-            existing["subtotal"] = existing["price"] * existing["quantity"]
-        else:
-            deduped[item["menu_id"]] = item
+    def dedupe_items(items: List[Dict]) -> List[Dict]:
+        deduped: Dict[int, Dict] = {}
+        for item in items:
+            existing = deduped.get(item["menu_id"])
+            if existing:
+                existing["quantity"] += item["quantity"]
+                existing["subtotal"] = existing["price"] * existing["quantity"]
+            else:
+                deduped[item["menu_id"]] = item
+        return list(deduped.values())
 
     return {
-        "items": list(deduped.values()),
+        "items": dedupe_items(matches),
+        "cancel_items": dedupe_items(cancel_matches),
         "remaining_text": " ".join(unmatched_segments).strip(),
     }
 

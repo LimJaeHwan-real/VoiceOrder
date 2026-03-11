@@ -35,22 +35,40 @@ def api_order_voice():
     menus = fetch_menus()
     order_result = parse_voice_order_result(text, menus)
     items = order_result["items"]
+    cancel_items = order_result["cancel_items"]
     remaining_text = order_result["remaining_text"]
     total_price = sum(item["subtotal"] for item in items)
     browse_text = remaining_text or text
     browse_result = browse_menus_by_intent(browse_text, menus)
 
-    if not items:
+    if not items and not cancel_items:
         return jsonify(
             {
                 "transcript": text,
                 "items": [],
+                "cancel_items": [],
                 "total_price": 0,
                 "browse_result": browse_result,
                 "message": (
                     browse_result["message"]
                     if browse_result
-                    else "메뉴를 찾지 못했습니다. 다시 말씀해 주세요."
+                    else "일치하는 메뉴를 찾지 못했습니다. 다시 말씀해 주세요."
+                ),
+            }
+        )
+
+    if cancel_items:
+        return jsonify(
+            {
+                "transcript": text,
+                "items": items,
+                "cancel_items": cancel_items,
+                "total_price": 0,
+                "browse_result": browse_result if not items else None,
+                "message": (
+                    "주문 후보를 담고, 취소할 항목도 확인했습니다."
+                    if items
+                    else "취소할 주문 후보를 확인했습니다."
                 ),
             }
         )
@@ -59,10 +77,11 @@ def api_order_voice():
         {
             "transcript": text,
             "items": items,
+            "cancel_items": [],
             "total_price": total_price,
             "browse_result": browse_result,
             "message": (
-                "주문 후보를 장바구니에 담고, 추가로 관련 메뉴를 추천했습니다."
+                "주문 후보를 장바구니에 담고, 관련 메뉴를 필터링해 보여주고 있습니다."
                 if browse_result
                 else "주문 후보를 장바구니에 담았습니다."
             ),

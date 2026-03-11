@@ -125,31 +125,33 @@ def browse_menus_by_intent(text: str, menus: List[Dict]) -> Dict | None:
             "tags": tags,
             "menus": [],
             "title": "원하시는 조건의 메뉴를 아직 준비하지 못했어요.",
-            "message": "현재 등록된 메뉴 중에서는 관련 메뉴를 찾지 못했습니다.",
+            "message": "일치하는 메뉴는 없어서 키워드 기준으로 찾아봤지만, 조건에 맞는 메뉴가 없습니다.",
             "scroll_target": categories[0] if categories else None,
         }
 
     scored_menus.sort(key=lambda entry: (-entry[0], -entry[1], entry[2]["id"]))
-    selected = [menu for _, _, menu in scored_menus[:4]]
+    selected = [menu for _, _, menu in scored_menus]
+    result_count = len(selected)
 
     if tags and not categories:
-        title = "원하시는 느낌과 가까운 메뉴를 보여드릴게요."
+        title = "말씀하신 조건으로 메뉴를 필터링했어요."
     elif categories:
         category_title = {
             "coffee": "커피",
             "non-coffee": "논커피",
             "dessert": "디저트",
         }.get(categories[0], categories[0])
-        title = f"{category_title} 메뉴를 보여드릴게요."
+        title = f"{category_title} 메뉴로 필터링했어요."
     else:
-        title = "관련 메뉴를 보여드릴게요."
+        title = "조건에 맞는 메뉴로 필터링했어요."
 
     return {
         "mode": "browse",
         "categories": categories,
         "tags": tags,
         "menus": selected,
+        "result_count": result_count,
         "title": title,
-        "message": "말씀하신 조건과 관련된 메뉴를 추천했습니다.",
+        "message": f"조건에 맞는 메뉴 {result_count}개를 아래 메뉴판에서 보여주고 있습니다.",
         "scroll_target": categories[0] if categories else (selected[0].get("category") if selected else None),
     }
