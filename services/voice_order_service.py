@@ -36,6 +36,10 @@ MENU_SYNONYMS = {
     "블루베리머핀": ["블루베리 머핀", "머핀"],
 }
 
+SEGMENT_SPLIT_PATTERN = re.compile(
+    r"(?:이랑|랑|하고|하구|그리고|그리구|또|또는|이랑은|이랑요|이랑그거|,|/|\+|및)"
+)
+
 
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", "", text.lower())
@@ -60,7 +64,17 @@ def extract_quantity(snippet: str) -> int:
     return 1
 
 
-def parse_voice_order(text: str, menus: List[Dict]) -> List[Dict]:
+def split_voice_segments(text: str) -> List[str]:
+    raw_segments = SEGMENT_SPLIT_PATTERN.split(text)
+    segments = []
+    for segment in raw_segments:
+        cleaned = segment.strip(" ,.!?~")
+        if cleaned:
+            segments.append(cleaned)
+    return segments or [text.strip()]
+
+
+def find_order_candidates(text: str, menus: List[Dict]) -> List[Dict]:
     compact_text = normalize_text(text)
     candidates = []
 
@@ -89,24 +103,61 @@ def parse_voice_order(text: str, menus: List[Dict]) -> List[Dict]:
         if not overlaps:
             accepted.append(candidate)
 
-    matches: List[Dict] = []
-    for candidate in accepted:
-        menu = candidate["menu"]
-        window_start = max(0, candidate["start"] - 6)
-        window_end = min(len(compact_text), candidate["end"] + 12)
-        context = compact_text[window_start:window_end]
-        quantity = extract_quantity(context)
+    return accepted
 
-        matches.append(
-            {
-                "menu_id": menu["id"],
-                "name": menu["name"],
-                "category": menu["category"],
-                "price": menu["price"],
-                "quantity": quantity,
-                "subtotal": menu["price"] * quantity,
-            }
-        )
+
+def extract_unmatched_text(text: str, matches: List[Dict]) -> str:
+    compact_text = normalize_text(text)
+    if not matches:
+        return text.strip()
+
+    consumed = [False] * len(compact_text)
+    for match in matches:
+        for index in range(match["start"], match["end"]):
+            if 0 <= index < len(consumed):
+                consumed[index] = True
+
+    remaining = "".join(
+        compact_text[index]
+        for index in range(len(compact_text))
+        if not consumed[index]
+    )
+    return remaining.strip()
+
+
+def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
+    matches: List[Dict] = []
+    unmatched_segments: List[str] = []
+
+    for segment in split_voice_segments(text):
+        accepted = find_order_candidates(segment, menus)
+        compact_segment = normalize_text(segment)
+
+        if not accepted:
+            unmatched_segments.append(segment)
+            continue
+
+        for candidate in accepted:
+            menu = candidate["menu"]
+            window_start = max(0, candidate["start"] - 6)
+            window_end = min(len(compact_segment), candidate["end"] + 12)
+            context = compact_segment[window_start:window_end]
+            quantity = extract_quantity(context)
+
+            matches.append(
+                {
+                    "menu_id": menu["id"],
+                    "name": menu["name"],
+                    "category": menu["category"],
+                    "price": menu["price"],
+                    "quantity": quantity,
+                    "subtotal": menu["price"] * quantity,
+                }
+            )
+
+        remaining_text = extract_unmatched_text(segment, accepted)
+        if len(remaining_text) >= 2:
+            unmatched_segments.append(remaining_text)
 
     deduped: Dict[int, Dict] = {}
     for item in matches:
@@ -117,4 +168,11 @@ def parse_voice_order(text: str, menus: List[Dict]) -> List[Dict]:
         else:
             deduped[item["menu_id"]] = item
 
-    return list(deduped.values())
+    return {
+        "items": list(deduped.values()),
+        "remaining_text": " ".join(unmatched_segments).strip(),
+    }
+
+
+def parse_voice_order(text: str, menus: List[Dict]) -> List[Dict]:
+    return parse_voice_order_result(text, menus)["items"]

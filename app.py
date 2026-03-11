@@ -8,7 +8,7 @@ from flask import Flask, jsonify, render_template, request
 from db import ensure_database, get_connection
 from services.menu_browse_service import browse_menus_by_intent
 from services.menu_service import fetch_menus
-from services.voice_order_service import parse_voice_order
+from services.voice_order_service import parse_voice_order_result
 
 app = Flask(__name__)
 
@@ -33,11 +33,14 @@ def api_order_voice():
         return jsonify({"error": "음성 인식 텍스트가 비어 있습니다."}), 400
 
     menus = fetch_menus()
-    items = parse_voice_order(text, menus)
+    order_result = parse_voice_order_result(text, menus)
+    items = order_result["items"]
+    remaining_text = order_result["remaining_text"]
     total_price = sum(item["subtotal"] for item in items)
+    browse_text = remaining_text or text
+    browse_result = browse_menus_by_intent(browse_text, menus)
 
     if not items:
-        browse_result = browse_menus_by_intent(text, menus)
         return jsonify(
             {
                 "transcript": text,
@@ -57,8 +60,12 @@ def api_order_voice():
             "transcript": text,
             "items": items,
             "total_price": total_price,
-            "browse_result": None,
-            "message": "주문 후보를 장바구니에 담았습니다.",
+            "browse_result": browse_result,
+            "message": (
+                "주문 후보를 장바구니에 담고, 추가로 관련 메뉴를 추천했습니다."
+                if browse_result
+                else "주문 후보를 장바구니에 담았습니다."
+            ),
         }
     )
 

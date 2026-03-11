@@ -1036,8 +1036,12 @@
 
       voiceMessage.textContent = data.message || "주문 분석 완료";
       if (Array.isArray(data.items) && data.items.length) {
-        clearBrowseResult();
         mergeCartItems(data.items);
+        if (data.browse_result) {
+          applyBrowseResult(data.browse_result);
+        } else {
+          clearBrowseResult();
+        }
         return;
       }
 
