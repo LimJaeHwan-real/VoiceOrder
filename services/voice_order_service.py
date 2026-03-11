@@ -47,11 +47,12 @@ ICE_KEYWORDS = ["아이스", "나이스", "차가운", "시원한", "ice", "iced
 HOT_KEYWORDS = ["핫", "따뜻한", "뜨거운", "hot", "warm", "뜨끈한"]
 GLOBAL_TEMPERATURE_KEYWORDS = ["전부", "모두", "다", "전부다", "모두다"]
 
-SEGMENT_SPLIT_PATTERN = re.compile(r"(?:이랑|랑|하고|하구|그리고|및|,|/|\+)")
+SEGMENT_DELIMITER_PATTERN = re.compile(r"(이랑|랑|하고|하구|그리고|및|말고|대신|아니다|아니야|아닌데|정정|,|/|\+)")
 QUANTITY_BOUNDARY_PATTERN = re.compile(
     r"((?:\d+\s*(?:잔|개|컵)?|열두|열한|열|아홉|여덟|일곱|여섯|다섯|네|세|두|한|하나|둘|셋|넷)(?:\s*(?:잔|개|컵))?)\s+"
 )
 CANCEL_KEYWORDS = ["취소", "빼줘", "빼 주", "삭제", "제거", "지워", "빼고", "주문취소"]
+CORRECTION_KEYWORDS = {"말고", "대신", "아니다", "아니야", "아닌데", "정정"}
 TRAILING_FILLER_PATTERN = re.compile(
     r"(추가해줘|추가해 주|추가해|추가|주세요|주세용|줘요|해줘|해 주|먹고싶어|먹고 싶어|마시고싶어|마시고 싶어|부탁해요|부탁해|부탁드립니다)$"
 )
@@ -171,25 +172,27 @@ def extract_quantity(snippet: str) -> int:
     return 1
 
 
-def split_voice_segments(text: str) -> List[str]:
+def split_voice_segments(text: str) -> List[Dict]:
     normalized_text = QUANTITY_BOUNDARY_PATTERN.sub(r"\1|", text)
-    raw_segments = []
-    for chunk in SEGMENT_SPLIT_PATTERN.split(normalized_text):
-        raw_segments.extend(chunk.split("|"))
     segments = []
-    for segment in raw_segments:
-        cleaned = segment.strip(" ,.!?~")
-        if cleaned:
-            segments.append(cleaned)
+    for chunk in normalized_text.split("|"):
+        parts = [part.strip(" ,.!?~") for part in SEGMENT_DELIMITER_PATTERN.split(chunk) if part and part.strip(" ,.!?~")]
+        relation = "append"
+        for part in parts:
+            if SEGMENT_DELIMITER_PATTERN.fullmatch(part):
+                relation = "replace" if part in CORRECTION_KEYWORDS else "append"
+                continue
+            segments.append({"text": part, "relation": relation})
+            relation = "append"
 
     merged_segments = []
     for segment in segments:
-        if merged_segments and is_cancel_directive_only(segment):
-            merged_segments[-1] = f"{merged_segments[-1]} {segment}".strip()
+        if merged_segments and is_cancel_directive_only(segment["text"]):
+            merged_segments[-1]["text"] = f"{merged_segments[-1]['text']} {segment['text']}".strip()
         else:
             merged_segments.append(segment)
 
-    return merged_segments or [text.strip()]
+    return merged_segments or [{"text": text.strip(), "relation": "append"}]
 
 
 def is_cancel_directive_only(text: str) -> bool:
@@ -491,9 +494,25 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
     unavailable_items: List[Dict] = []
     unmatched_segments: List[str] = []
     global_temperature_hint = detect_global_temperature_hint(text)
+    segment_history: List[Dict] = []
 
-    for segment in split_voice_segments(text):
-        segment = trim_segment_noise(segment)
+    def rollback_last_add_segment() -> None:
+        while segment_history:
+            history = segment_history.pop()
+            if history["matches"] or history["pending"] or history["unavailable"]:
+                if history["matches"]:
+                    del matches[-history["matches"]:]
+                if history["pending"]:
+                    del pending_items[-history["pending"]:]
+                if history["unavailable"]:
+                    del unavailable_items[-history["unavailable"]:]
+                break
+
+    for segment_info in split_voice_segments(text):
+        if segment_info["relation"] == "replace":
+            rollback_last_add_segment()
+
+        segment = trim_segment_noise(segment_info["text"])
         if not segment:
             continue
 
@@ -503,11 +522,15 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
         compact_segment = normalize_text(segment)
         group_candidates = find_group_name_candidates(segment, menus, segment_temperature_hint)
         accepted = merge_candidates(accepted, group_candidates)
+        before_matches = len(matches)
+        before_pending = len(pending_items)
+        before_unavailable = len(unavailable_items)
 
         if not accepted:
             fuzzy_candidate = fuzzy_match_menu(segment, menus)
             if fuzzy_candidate is None:
                 unmatched_segments.append(segment)
+                segment_history.append({"matches": 0, "pending": 0, "unavailable": 0})
                 continue
             accepted = [fuzzy_candidate]
 
@@ -564,6 +587,13 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
         remaining_text = extract_unmatched_text(segment, accepted)
         if len(remaining_text) >= 2 and not is_cancel_directive_only(remaining_text):
             unmatched_segments.append(remaining_text)
+        segment_history.append(
+            {
+                "matches": len(matches) - before_matches,
+                "pending": len(pending_items) - before_pending,
+                "unavailable": len(unavailable_items) - before_unavailable,
+            }
+        )
 
     def dedupe_items(items: List[Dict]) -> List[Dict]:
         deduped: Dict[int, Dict] = {}

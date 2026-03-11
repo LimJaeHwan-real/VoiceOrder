@@ -523,6 +523,42 @@
       return "";
     }
 
+    function detectCancelIntent(transcript) {
+      const text = normalizeText(transcript);
+      return ["취소", "빼줘", "빼주", "삭제", "제거", "지워", "안할래", "안할게"].some((keyword) =>
+        text.includes(normalizeText(keyword))
+      );
+    }
+
+    function cancelPendingSelection(transcript = "") {
+      if (!state.voiceFlow.pendingSelections.length) return false;
+
+      const text = normalizeText(transcript);
+      const targetIndex = state.voiceFlow.pendingSelections.findIndex((pending, index) => {
+        if (!text) {
+          return index === 0;
+        }
+        return text.includes(normalizeText(pending.group_name));
+      });
+
+      const resolvedIndex = targetIndex >= 0 ? targetIndex : 0;
+      const [removed] = state.voiceFlow.pendingSelections.splice(resolvedIndex, 1);
+      if (!removed) return false;
+
+      const actionLabel = removed.action === "cancel" ? "취소 요청" : "추가 요청";
+      setPanelMessage(`${removed.group_name} ${actionLabel}을 중단했습니다.`);
+
+      if (state.voiceFlow.pendingSelections.length) {
+        const nextPending = state.voiceFlow.pendingSelections[0];
+        openVoiceFlowStep(2, `${removed.group_name} ${actionLabel}은 취소했어요. ${nextPending.group_name}은 아이스와 핫 중 어떤 걸로 ${nextPending.action === "cancel" ? "뺄까요" : "담을까요"}?`, { autoListen: true });
+      } else if (state.cart.length) {
+        openVoiceFlowStep(2, `${removed.group_name} ${actionLabel}은 취소했어요. 추가 주문이 있으면 계속 말씀해 주세요.`, { autoListen: true });
+      } else {
+        openVoiceFlowStep(1, `${removed.group_name} ${actionLabel}은 취소했어요. 원하시는 메뉴를 다시 말씀해 주세요.`, { autoListen: true });
+      }
+      return true;
+    }
+
     function buildMenuGroups(menus) {
       const groups = new Map();
       menus.forEach((menu) => {
@@ -1416,8 +1452,13 @@
       const paymentMethod = detectPaymentMethod(transcript);
       const paymentIntent = detectPaymentIntent(transcript);
       const temperatureChoice = detectTemperatureChoice(transcript);
+      const cancelIntent = detectCancelIntent(transcript);
 
       if ((step === 1 || step === 2) && state.voiceFlow.pendingSelections.length) {
+        if (cancelIntent) {
+          cancelPendingSelection(transcript);
+          return;
+        }
         if (!temperatureChoice) {
           openVoiceFlowStep(2, `${state.voiceFlow.pendingSelections[0].group_name}은 아이스 또는 핫 중 하나로 말씀해 주세요.`, { autoListen: true });
           return;
