@@ -1,7 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict
 
 from flask import Flask, jsonify, render_template, request
 
@@ -24,6 +23,35 @@ def api_menus():
     return jsonify({"menus": fetch_menus()})
 
 
+@app.post("/api/menus/browse")
+def api_menus_browse():
+    payload = request.get_json(silent=True) or {}
+    text = (payload.get("text") or "").strip()
+
+    if not text:
+        return jsonify({"error": "검색할 음성 또는 텍스트가 비어 있습니다."}), 400
+
+    menus = fetch_menus()
+    browse_result = browse_menus_by_intent(text, menus)
+
+    if not browse_result:
+        return jsonify(
+            {
+                "transcript": text,
+                "browse_result": None,
+                "message": "조건에 맞는 메뉴를 찾지 못했습니다. 다른 키워드로 다시 말씀해 주세요.",
+            }
+        )
+
+    return jsonify(
+        {
+            "transcript": text,
+            "browse_result": browse_result,
+            "message": browse_result["message"],
+        }
+    )
+
+
 @app.post("/api/order/voice")
 def api_order_voice():
     payload = request.get_json(silent=True) or {}
@@ -38,8 +66,8 @@ def api_order_voice():
     cancel_items = order_result["cancel_items"]
     remaining_text = order_result["remaining_text"]
     total_price = sum(item["subtotal"] for item in items)
-    browse_text = remaining_text or text
-    browse_result = browse_menus_by_intent(browse_text, menus)
+    browse_text = remaining_text if (items or cancel_items) else (remaining_text or text)
+    browse_result = browse_menus_by_intent(browse_text, menus) if browse_text else None
 
     if not items and not cancel_items:
         return jsonify(
@@ -66,9 +94,9 @@ def api_order_voice():
                 "total_price": 0,
                 "browse_result": browse_result if not items else None,
                 "message": (
-                    "주문 후보를 담고, 취소할 항목도 확인했습니다."
+                    "담을 메뉴와 취소할 메뉴를 함께 확인했습니다."
                     if items
-                    else "취소할 주문 후보를 확인했습니다."
+                    else "장바구니에서 뺄 메뉴를 확인했습니다."
                 ),
             }
         )
@@ -81,9 +109,9 @@ def api_order_voice():
             "total_price": total_price,
             "browse_result": browse_result,
             "message": (
-                "주문 후보를 장바구니에 담고, 관련 메뉴를 필터링해 보여주고 있습니다."
+                "메뉴를 장바구니에 담고 관련 메뉴도 함께 보여주고 있습니다."
                 if browse_result
-                else "주문 후보를 장바구니에 담았습니다."
+                else "메뉴를 장바구니에 담았습니다."
             ),
         }
     )
@@ -93,6 +121,9 @@ def api_order_voice():
 def api_order_confirm():
     payload = request.get_json(silent=True) or {}
     items = payload.get("items") or []
+    order_channel = (payload.get("order_channel") or "touch").strip() or "touch"
+    service_mode = (payload.get("service_mode") or "").strip() or None
+    payment_method = (payload.get("payment_method") or "").strip() or None
 
     if not items:
         return jsonify({"error": "주문할 상품이 없습니다."}), 400
@@ -124,8 +155,11 @@ def api_order_confirm():
     with get_connection() as connection:
         cursor = connection.cursor()
         cursor.execute(
-            "INSERT INTO Orders (total_price, created_at) VALUES (?, ?)",
-            (total_price, created_at),
+            """
+            INSERT INTO Orders (total_price, created_at, order_channel, service_mode, payment_method)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (total_price, created_at, order_channel, service_mode, payment_method),
         )
         order_id = cursor.lastrowid
 
@@ -151,3 +185,4 @@ def api_order_confirm():
 if __name__ == "__main__":
     ensure_database()
     app.run(debug=True, host="0.0.0.0", port=5000)
+
