@@ -36,16 +36,21 @@ KOREAN_NUMBER_MAP = {
 
 MENU_SYNONYMS = {
     "아이스 아메리카노": ["아메리카노", "아아", "아이스아메리카노"],
+    "핫 아메리카노": ["뜨거운 아메리카노", "따뜻한 아메리카노", "뜨아", "핫아메리카노"],
     "카페라떼": ["라떼", "카페 라떼"],
-    "딸기 스무디": ["스무디", "딸기스무디"],
-    "초코 케이크": ["케이크", "초코케이크"],
-    "블루베리 머핀": ["머핀", "블루베리머핀"],
+    "바닐라라떼": ["바닐라 라떼", "바닐라라테"],
+    "카라멜마키아또": ["카라멜 마키아또", "마키아또"],
+    "딸기스무디": ["딸기 스무디", "스무디"],
+    "자몽에이드": ["자몽 에이드", "에이드"],
+    "생강차": ["생강 차", "진저티"],
+    "초코케이크": ["초코 케이크", "케이크"],
+    "햄치즈샌드위치": ["햄 치즈 샌드위치", "샌드위치"],
+    "블루베리머핀": ["블루베리 머핀", "머핀"],
 }
 
 
 def ensure_database() -> None:
-    if not DB_PATH.exists():
-        initialize_database(DB_PATH)
+    initialize_database(DB_PATH)
 
 
 def get_connection() -> sqlite3.Connection:
@@ -58,7 +63,7 @@ def get_connection() -> sqlite3.Connection:
 def fetch_menus() -> List[Dict]:
     with get_connection() as connection:
         rows = connection.execute(
-            "SELECT id, name, price, image_url FROM Menu ORDER BY id"
+            "SELECT id, name, price, image_url, category FROM Menu WHERE category IS NOT NULL ORDER BY id"
         ).fetchall()
     return [dict(row) for row in rows]
 
@@ -86,23 +91,38 @@ def extract_quantity(snippet: str) -> int:
 
 def parse_voice_order(text: str, menus: List[Dict]) -> List[Dict]:
     compact_text = normalize_text(text)
-    matches: List[Dict] = []
+    candidates = []
 
     for menu in menus:
-        alias_hit = None
-        hit_index = -1
-
         for alias in menu_aliases(menu["name"]):
             hit_index = compact_text.find(alias)
             if hit_index >= 0:
-                alias_hit = alias
+                candidates.append(
+                    {
+                        "menu": menu,
+                        "alias": alias,
+                        "start": hit_index,
+                        "end": hit_index + len(alias),
+                    }
+                )
                 break
 
-        if alias_hit is None:
-            continue
+    candidates.sort(key=lambda item: (-(item["end"] - item["start"]), item["start"]))
 
-        window_start = max(0, hit_index - 6)
-        window_end = min(len(compact_text), hit_index + len(alias_hit) + 12)
+    accepted = []
+    for candidate in candidates:
+        overlaps = any(
+            not (candidate["end"] <= existing["start"] or candidate["start"] >= existing["end"])
+            for existing in accepted
+        )
+        if not overlaps:
+            accepted.append(candidate)
+
+    matches: List[Dict] = []
+    for candidate in accepted:
+        menu = candidate["menu"]
+        window_start = max(0, candidate["start"] - 6)
+        window_end = min(len(compact_text), candidate["end"] + 12)
         context = compact_text[window_start:window_end]
         quantity = extract_quantity(context)
 
@@ -110,6 +130,7 @@ def parse_voice_order(text: str, menus: List[Dict]) -> List[Dict]:
             {
                 "menu_id": menu["id"],
                 "name": menu["name"],
+                "category": menu["category"],
                 "price": menu["price"],
                 "quantity": quantity,
                 "subtotal": menu["price"] * quantity,
@@ -232,3 +253,4 @@ def api_order_confirm():
 if __name__ == "__main__":
     ensure_database()
     app.run(debug=True, host="0.0.0.0", port=5000)
+
