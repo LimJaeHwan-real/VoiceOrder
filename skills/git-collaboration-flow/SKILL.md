@@ -1,74 +1,86 @@
 ﻿---
 name: git-collaboration-flow
-description: Use this skill when the user wants help with a team Git or GitHub collaboration workflow: creating a feature branch from main, working and committing on that branch, pushing to origin, preparing or opening a pull request, merging, deleting merged branches, pruning removed remote branches, or syncing local main after teammates merge code. Useful for English or Korean requests about 브랜치, 커밋, 푸시, PR, 머지, 정리, and main sync.
+description: Use this skill when the user wants help with a standard team Git or GitHub collaboration workflow built around `main`: create a work branch from `main`, commit on that branch, push to `origin`, prepare or open a pull request, merge, clean up merged branches, prune removed remote branches, or sync local `main` after teammates merge code. Useful for English or Korean requests about 브랜치 생성, 커밋, 푸시, PR 생성, 머지, 브랜치 정리, `git fetch --prune`, and `git pull origin main`.
 ---
 
 # Git Collaboration Flow
 
-## Overview
+Follow the repository's existing branch naming or review rules if they differ from the default flow below.
 
-Use this skill to guide or execute a standard team workflow built around a shared `main` branch and short-lived work branches.
+## Core Flow
 
-Default assumptions:
+Use this exact order unless the repository uses a different process:
 
-- `main` is the integration branch.
-- Work should happen on a separate branch.
-- Safety and clean handoff matter more than clever Git history edits.
+1. Create a branch from `main`.
+2. Make changes and commit on that branch.
+3. Push the branch to `origin`.
+4. Create or prepare a PR targeting `main`.
+5. Merge after review.
+6. Clean up merged branches and refresh local refs.
 
-If the repository has a different convention, adapt to the repository instead of forcing new naming or branch rules.
+Read [references/git-team-workflow-ko.md](references/git-team-workflow-ko.md) when the user wants exact command snippets or Korean guidance.
 
-## Workflow
+## Execute Safely
 
-### 1. Inspect before acting
+Before running branch or cleanup commands:
 
-- Confirm the current directory is a Git repository.
-- Check the current branch, working tree, and remote setup before creating, switching, or deleting branches.
-- If the tree is dirty, preserve the user's changes and explain any risk before switching branches or cleaning up.
+- Confirm the directory is a Git repository.
+- Check the current branch, working tree status, and configured remotes.
+- Preserve uncommitted user changes. Do not switch branches or delete anything blindly when the tree is dirty.
+- Prefer `main` as the base branch only when the repository actually uses `main`.
 
-### 2. Start work from `main`
+## Run The Standard Steps
 
-- Move to `main` and sync it when that is safe.
-- Create a fresh work branch from `main`.
-- Prefer the repository's naming convention. If none is visible, use a clear prefix such as `feature/<topic>` or `fix/<topic>`.
-- Never do feature work directly on `main` unless the user explicitly asks.
+### 1. Start from `main`
 
-### 3. Implement and verify
+- Switch to `main`.
+- Pull the latest `main` when network access and credentials are available.
+- Create a fresh work branch such as `feature/<topic>`.
+- Avoid doing feature work directly on `main` unless the user explicitly asks.
 
-- Make the requested changes on the work branch.
-- Run relevant tests, lint, or build steps when they exist.
-- Summarize what changed, what was verified, and any remaining risk.
+### 2. Commit on the work branch
 
-### 4. Prepare the handoff
+- Stage only the intended changes.
+- Make focused commits with clear messages.
+- Run the smallest useful verification before or after committing.
 
-- Commit focused changes with a clear message.
-- Push the branch with upstream tracking.
-- If GitHub tooling is available, help create or draft the PR. Otherwise provide the exact manual next step.
-- Include a short PR-ready summary covering purpose, key changes, verification, and open questions.
+### 3. Push the branch
 
-### 5. Clean up after merge
+- Push with upstream tracking, typically `git push -u origin <branch>`.
+- If push fails because of auth, remote, or network issues, explain the blocker clearly.
 
-- After the branch is merged, switch back to `main`.
+### 4. Prepare the PR
+
+- Open or draft a PR from the work branch into `main`.
+- If GitHub CLI is available, use it. Otherwise provide the exact manual PR step.
+- Summarize purpose, key changes, verification, and review points in a short PR-ready note.
+
+### 5. Merge
+
+- Treat merge as the post-review step.
+- Do not merge on behalf of the user unless they explicitly ask and the repository workflow allows it.
+
+### 6. Clean up
+
+- After merge, switch back to `main`.
 - Pull the latest `main`.
-- Delete the merged local branch and remote branch when the user wants cleanup or when the workflow clearly includes it.
-- Run `git fetch --prune` when teammates deleted remote branches and the local branch list should be refreshed.
+- Delete the merged local branch with `git branch -d <branch>`.
+- Delete the merged remote branch with `git push origin --delete <branch>` when the user wants full cleanup.
+- Run `git fetch --prune` when teammates already removed remote branches and the local branch list needs refreshing.
 
-## Safety Rules
+## Special Cases
+
+- When a teammate merged code into `main`, sync with `git checkout main` and `git pull origin main`.
+- When a teammate deleted a remote branch, refresh local refs with `git fetch --prune`.
+- When the repository uses `git switch`, mirror the same flow with `git switch main` and `git switch -c <branch>`.
+- When branch naming differs from `feature/<topic>`, follow the team's convention.
+
+## Guardrails
 
 - Ask before deleting any branch that may still contain unmerged commits or local changes.
 - Prefer status checks before cleanup commands.
 - If push, pull, or PR creation needs network access or credentials, say so clearly.
 - If the directory is not a Git repository, stop early and explain what is missing.
-
-## Communication
-
-Keep the user updated with:
-
-- current branch
-- whether `main` is synced
-- commands you ran or recommend
-- blockers such as dirty state, missing remote, auth, or merge conflicts
-
-When the user wants exact command snippets or Korean phrasing, read [references/git-team-workflow-ko.md](references/git-team-workflow-ko.md).
 
 ## Common Trigger Examples
 
@@ -77,4 +89,3 @@ When the user wants exact command snippets or Korean phrasing, read [references/
 - "동료가 머지했으니 내 로컬 main 최신화해줘"
 - "삭제된 원격 브랜치 정리하고 싶어"
 - "팀 프로젝트 Git 협업 순서를 알려줘"
-
