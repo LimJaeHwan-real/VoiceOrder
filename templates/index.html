@@ -514,7 +514,7 @@
 
     function detectTemperatureChoice(transcript) {
       const text = normalizeText(transcript);
-      if (["아이스", "차갑", "시원", "ice", "iced"].some((keyword) => text.includes(normalizeText(keyword)))) {
+      if (["아이스", "나이스", "차갑", "시원", "ice", "iced"].some((keyword) => text.includes(normalizeText(keyword)))) {
         return "ice";
       }
       if (["핫", "따뜻", "뜨거", "hot", "warm"].some((keyword) => text.includes(normalizeText(keyword)))) {
@@ -1374,7 +1374,10 @@
 
       if (Array.isArray(data.items) && data.items.length) {
         state.voiceFlow.pendingSelections = [];
-        openVoiceFlowStep(2, `${data.items.map((item) => item.name).join(", ")} 메뉴를 담았어요. 추가 주문이 있으면 계속 말씀해 주세요.`, { autoListen: true });
+        const successMessage = Array.isArray(data.unavailable_items) && data.unavailable_items.length
+          ? data.message
+          : `${data.items.map((item) => item.name).join(", ")} 메뉴를 담았어요. 추가 주문이 있으면 계속 말씀해 주세요.`;
+        openVoiceFlowStep(2, successMessage, { autoListen: true });
         return true;
       }
 

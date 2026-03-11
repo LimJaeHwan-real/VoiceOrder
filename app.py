@@ -21,6 +21,17 @@ def build_pending_option_message(pending_items):
     return f"{group_name} {count_label}은 아이스와 핫 중 어떤 걸로 {action_label}"
 
 
+def build_unavailable_option_message(unavailable_items):
+    messages = []
+    for item in unavailable_items:
+        requested_label = "아이스" if item["requested_temperature"] == "ice" else "핫"
+        available_label = "아이스" if item["available_temperature"] == "ice" else "핫"
+        requested_phrase = "아이스로는" if requested_label == "아이스" else "핫으로는"
+        available_phrase = "아이스만" if available_label == "아이스" else "핫만"
+        messages.append(f"{item['group_name']}은 {requested_phrase} 없고 {available_phrase} 가능합니다.")
+    return " ".join(messages)
+
+
 @app.route("/")
 def index():
     ensure_database()
@@ -74,18 +85,20 @@ def api_order_voice():
     items = order_result["items"]
     cancel_items = order_result["cancel_items"]
     pending_items = order_result["pending_items"]
+    unavailable_items = order_result["unavailable_items"]
     remaining_text = order_result["remaining_text"]
     total_price = sum(item["subtotal"] for item in items)
     browse_text = remaining_text if (items or cancel_items) else (remaining_text or text)
     browse_result = browse_menus_by_intent(browse_text, menus) if (browse_text and not pending_items) else None
 
-    if not items and not cancel_items and not pending_items:
+    if not items and not cancel_items and not pending_items and not unavailable_items:
         return jsonify(
             {
                 "transcript": text,
                 "items": [],
                 "cancel_items": [],
                 "pending_items": [],
+                "unavailable_items": [],
                 "total_price": 0,
                 "browse_result": browse_result,
                 "message": (
@@ -96,6 +109,20 @@ def api_order_voice():
             }
         )
 
+    if unavailable_items and not items and not cancel_items and not pending_items:
+        return jsonify(
+            {
+                "transcript": text,
+                "items": [],
+                "cancel_items": [],
+                "pending_items": [],
+                "unavailable_items": unavailable_items,
+                "total_price": 0,
+                "browse_result": None,
+                "message": build_unavailable_option_message(unavailable_items),
+            }
+        )
+
     if pending_items and not items and not cancel_items:
         return jsonify(
             {
@@ -103,30 +130,53 @@ def api_order_voice():
                 "items": [],
                 "cancel_items": [],
                 "pending_items": pending_items,
+                "unavailable_items": unavailable_items,
                 "total_price": 0,
                 "browse_result": None,
-                "message": build_pending_option_message(pending_items),
+                "message": (
+                    f"{build_unavailable_option_message(unavailable_items)} {build_pending_option_message(pending_items)}".strip()
+                    if unavailable_items
+                    else build_pending_option_message(pending_items)
+                ),
             }
         )
 
     if cancel_items:
+        cancel_message = (
+            f"{build_unavailable_option_message(unavailable_items)} {build_pending_option_message(pending_items)}".strip()
+            if unavailable_items and pending_items
+            else f"메뉴를 반영했고, {build_pending_option_message(pending_items)}"
+            if pending_items
+            else build_unavailable_option_message(unavailable_items)
+            if unavailable_items
+            else "담을 메뉴와 취소할 메뉴를 함께 확인했습니다."
+            if items
+            else "장바구니에서 뺄 메뉴를 확인했습니다."
+        )
         return jsonify(
             {
                 "transcript": text,
                 "items": items,
                 "cancel_items": cancel_items,
                 "pending_items": pending_items,
+                "unavailable_items": unavailable_items,
                 "total_price": 0,
                 "browse_result": browse_result if not items and not pending_items else None,
-                "message": (
-                    f"메뉴를 반영했고, {build_pending_option_message(pending_items)}"
-                    if pending_items
-                    else "담을 메뉴와 취소할 메뉴를 함께 확인했습니다."
-                    if items
-                    else "장바구니에서 뺄 메뉴를 확인했습니다."
-                ),
+                "message": cancel_message,
             }
         )
+
+    success_message = (
+        f"{build_unavailable_option_message(unavailable_items)} {build_pending_option_message(pending_items)}".strip()
+        if unavailable_items and pending_items
+        else build_pending_option_message(pending_items)
+        if pending_items
+        else build_unavailable_option_message(unavailable_items)
+        if unavailable_items
+        else "메뉴를 장바구니에 담고 관련 메뉴도 함께 보여주고 있습니다."
+        if browse_result
+        else "메뉴를 장바구니에 담았습니다."
+    )
 
     return jsonify(
         {
@@ -134,16 +184,10 @@ def api_order_voice():
             "items": items,
             "cancel_items": [],
             "pending_items": pending_items,
+            "unavailable_items": unavailable_items,
             "total_price": total_price,
             "browse_result": browse_result if not pending_items else None,
-            "message": (
-                build_pending_option_message(pending_items)
-                if pending_items
-                else
-                "메뉴를 장바구니에 담고 관련 메뉴도 함께 보여주고 있습니다."
-                if browse_result
-                else "메뉴를 장바구니에 담았습니다."
-            ),
+            "message": success_message,
         }
     )
 

@@ -43,10 +43,11 @@ MENU_SYNONYMS = {
     "핫 청포도에이드": ["핫청포도에이드", "따뜻한청포도에이드"],
 }
 
-ICE_KEYWORDS = ["아이스", "차가운", "시원한", "ice", "iced", "차갑"]
+ICE_KEYWORDS = ["아이스", "나이스", "차가운", "시원한", "ice", "iced", "차갑"]
 HOT_KEYWORDS = ["핫", "따뜻한", "뜨거운", "hot", "warm", "뜨끈한"]
+GLOBAL_TEMPERATURE_KEYWORDS = ["전부", "모두", "다", "전부다", "모두다"]
 
-SEGMENT_SPLIT_PATTERN = re.compile(r"(?:이랑|랑|하고|하구|그리고|또는|및|,|/|\+)")
+SEGMENT_SPLIT_PATTERN = re.compile(r"(?:이랑|랑|하고|하구|그리고|및|,|/|\+)")
 QUANTITY_BOUNDARY_PATTERN = re.compile(
     r"((?:\d+\s*(?:잔|개|컵)?|열두|열한|열|아홉|여덟|일곱|여섯|다섯|네|세|두|한|하나|둘|셋|넷)(?:\s*(?:잔|개|컵))?)\s+"
 )
@@ -80,6 +81,7 @@ NOISE_PHRASES = [
 QUANTITY_TOKEN_PATTERN = re.compile(
     r"(\d+\s*(?:잔|개|컵)?|열두|열한|열|아홉|여덟|일곱|여섯|다섯|네|세|두|한|하나|둘|셋|넷)(?:\s*(?:잔|개|컵))?"
 )
+TRAILING_PARTICLE_PATTERN = re.compile(r"(은|는|이|가|을|를|와|과|도|만|으로|로|에|에서|께|한테)+$")
 
 
 def normalize_text(text: str) -> str:
@@ -97,6 +99,20 @@ def detect_temperature_hint(text: str) -> str:
     if any(normalize_text(keyword) in compact_text for keyword in ICE_KEYWORDS):
         return "ice"
     if any(normalize_text(keyword) in compact_text for keyword in HOT_KEYWORDS):
+        return "hot"
+    return ""
+
+
+def detect_global_temperature_hint(text: str) -> str:
+    compact_text = normalize_text(text)
+    if not any(normalize_text(keyword) in compact_text for keyword in GLOBAL_TEMPERATURE_KEYWORDS):
+        return ""
+
+    has_ice = any(normalize_text(keyword) in compact_text for keyword in ICE_KEYWORDS)
+    has_hot = any(normalize_text(keyword) in compact_text for keyword in HOT_KEYWORDS)
+    if has_ice and not has_hot:
+        return "ice"
+    if has_hot and not has_ice:
         return "hot"
     return ""
 
@@ -165,7 +181,24 @@ def split_voice_segments(text: str) -> List[str]:
         cleaned = segment.strip(" ,.!?~")
         if cleaned:
             segments.append(cleaned)
-    return segments or [text.strip()]
+
+    merged_segments = []
+    for segment in segments:
+        if merged_segments and is_cancel_directive_only(segment):
+            merged_segments[-1] = f"{merged_segments[-1]} {segment}".strip()
+        else:
+            merged_segments.append(segment)
+
+    return merged_segments or [text.strip()]
+
+
+def is_cancel_directive_only(text: str) -> bool:
+    stripped_segment = normalize_text(text)
+    for keyword in CANCEL_KEYWORDS:
+        stripped_segment = stripped_segment.replace(normalize_text(keyword), "")
+    for filler in ["해줘", "해주세요", "해주", "줘", "주세", "좀", "만", "요"]:
+        stripped_segment = stripped_segment.replace(normalize_text(filler), "")
+    return is_cancel_request(text) and not stripped_segment
 
 
 def trim_segment_noise(text: str) -> str:
@@ -190,6 +223,25 @@ def trim_segment_noise(text: str) -> str:
 
 def strip_quantity_tokens(text: str) -> str:
     return QUANTITY_TOKEN_PATTERN.sub("", text).strip()
+
+
+def cleanup_remaining_text(text: str) -> str:
+    cleaned = normalize_text(strip_quantity_tokens(text))
+    for keyword in CANCEL_KEYWORDS:
+        cleaned = cleaned.replace(normalize_text(keyword), "")
+    for keyword in ICE_KEYWORDS + HOT_KEYWORDS + GLOBAL_TEMPERATURE_KEYWORDS:
+        cleaned = cleaned.replace(normalize_text(keyword), "")
+    for filler in [
+        "추가", "추가해", "추가해줘", "주세요", "줘", "해줘", "주고", "하고", "해", "좀",
+        "말고", "그리고", "그냥", "부탁", "부탁해요", "전부", "모두", "다",
+    ]:
+        cleaned = cleaned.replace(normalize_text(filler), "")
+
+    previous = None
+    while cleaned and previous != cleaned:
+        previous = cleaned
+        cleaned = TRAILING_PARTICLE_PATTERN.sub("", cleaned)
+    return cleaned.strip()
 
 
 def find_order_candidates(text: str, menus: List[Dict]) -> List[Dict]:
@@ -221,6 +273,24 @@ def find_order_candidates(text: str, menus: List[Dict]) -> List[Dict]:
         if not overlaps:
             accepted.append(candidate)
 
+    return accepted
+
+
+def merge_candidates(*candidate_lists: List[Dict]) -> List[Dict]:
+    merged = []
+    for candidate_list in candidate_lists:
+        merged.extend(candidate_list)
+
+    merged.sort(key=lambda item: (-(item["end"] - item["start"]), item["start"]))
+
+    accepted = []
+    for candidate in merged:
+        overlaps = any(
+            not (candidate["end"] <= existing["start"] or candidate["start"] >= existing["end"])
+            for existing in accepted
+        )
+        if not overlaps:
+            accepted.append(candidate)
     return accepted
 
 
@@ -259,7 +329,24 @@ def temperature_options_for_group(group_name: str, menus: List[Dict]) -> List[Di
     )
 
 
-def find_group_name_candidates(text: str, menus: List[Dict]) -> List[Dict]:
+def menu_for_option(option: Dict, menus: List[Dict]) -> Dict | None:
+    return next((menu for menu in menus if menu["id"] == option["menu_id"]), None)
+
+
+def temperature_option_for_hint(group_name: str, menus: List[Dict], temperature_hint: str) -> Dict | None:
+    if not temperature_hint:
+        return None
+    return next(
+        (
+            option
+            for option in temperature_options_for_group(group_name, menus)
+            if option["temperature"] == temperature_hint
+        ),
+        None,
+    )
+
+
+def find_group_name_candidates(text: str, menus: List[Dict], temperature_hint: str = "") -> List[Dict]:
     compact_text = normalize_text(text)
     group_candidates = []
     seen_groups = set()
@@ -290,12 +377,18 @@ def find_group_name_candidates(text: str, menus: List[Dict]) -> List[Dict]:
             "start": hit_index,
             "end": hit_index + len(group_name),
         }
-        if len(group_options) > 1:
+        if len(group_options) > 1 and temperature_hint:
+            resolved_option = temperature_option_for_hint(group_name, menus, temperature_hint)
+            resolved_menu = menu_for_option(resolved_option, menus) if resolved_option else None
+            if not resolved_menu:
+                continue
+            candidate["menu"] = resolved_menu
+        elif len(group_options) > 1:
             candidate["pending_options"] = group_options
             candidate["group_name"] = group_options[0]["name"].replace("아이스 ", "").replace("핫 ", "")
             candidate["category"] = group_options[0]["category"]
         else:
-            selected_menu = next((menu for menu in menus if menu["id"] == group_options[0]["menu_id"]), None)
+            selected_menu = menu_for_option(group_options[0], menus)
             if not selected_menu:
                 continue
             candidate["menu"] = selected_menu
@@ -388,14 +481,16 @@ def extract_unmatched_text(text: str, matches: List[Dict]) -> str:
         for index in range(len(compact_text))
         if not consumed[index]
     )
-    return normalize_text(strip_quantity_tokens(remaining)).strip()
+    return cleanup_remaining_text(remaining)
 
 
 def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
     matches: List[Dict] = []
     cancel_matches: List[Dict] = []
     pending_items: List[Dict] = []
+    unavailable_items: List[Dict] = []
     unmatched_segments: List[str] = []
+    global_temperature_hint = detect_global_temperature_hint(text)
 
     for segment in split_voice_segments(text):
         segment = trim_segment_noise(segment)
@@ -403,11 +498,11 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
             continue
 
         segment_is_cancel = is_cancel_request(segment)
+        segment_temperature_hint = detect_temperature_hint(segment) or global_temperature_hint
         accepted = find_order_candidates(segment, menus)
         compact_segment = normalize_text(segment)
-
-        if not accepted:
-            accepted = find_group_name_candidates(segment, menus)
+        group_candidates = find_group_name_candidates(segment, menus, segment_temperature_hint)
+        accepted = merge_candidates(accepted, group_candidates)
 
         if not accepted:
             fuzzy_candidate = fuzzy_match_menu(segment, menus)
@@ -435,6 +530,23 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
                 continue
 
             menu = candidate["menu"]
+            if (
+                segment_temperature_hint
+                and (menu.get("temperature") or "")
+                and (menu.get("temperature") or "") != segment_temperature_hint
+                and not group_has_temperature_choices(menu, menus)
+            ):
+                unavailable_items.append(
+                    {
+                        "group_name": menu.get("group_name") or menu["name"],
+                        "requested_temperature": segment_temperature_hint,
+                        "available_temperature": menu.get("temperature") or "",
+                        "quantity": quantity,
+                        "action": "cancel" if segment_is_cancel else "add",
+                    }
+                )
+                continue
+
             target_list = cancel_matches if segment_is_cancel else matches
             target_list.append(
                 {
@@ -450,7 +562,7 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
             )
 
         remaining_text = extract_unmatched_text(segment, accepted)
-        if len(remaining_text) >= 2:
+        if len(remaining_text) >= 2 and not is_cancel_directive_only(remaining_text):
             unmatched_segments.append(remaining_text)
 
     def dedupe_items(items: List[Dict]) -> List[Dict]:
@@ -481,10 +593,22 @@ def parse_voice_order_result(text: str, menus: List[Dict]) -> Dict:
                 }
         return list(deduped.values())
 
+    def dedupe_unavailable(items: List[Dict]) -> List[Dict]:
+        deduped: Dict[str, Dict] = {}
+        for item in items:
+            key = f"{item['action']}:{normalize_text(item['group_name'])}:{item['requested_temperature']}"
+            existing = deduped.get(key)
+            if existing:
+                existing["quantity"] += item["quantity"]
+            else:
+                deduped[key] = dict(item)
+        return list(deduped.values())
+
     return {
         "items": dedupe_items(matches),
         "cancel_items": dedupe_items(cancel_matches),
         "pending_items": dedupe_pending(pending_items),
+        "unavailable_items": dedupe_unavailable(unavailable_items),
         "remaining_text": " ".join(unmatched_segments).strip(),
     }
 
