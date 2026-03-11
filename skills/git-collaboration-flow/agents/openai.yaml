@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Collaboration Flow"
+  short_description: "Help with team Git branch and PR workflows"
+  default_prompt: "Use $git-collaboration-flow to guide a safe team Git workflow from branch creation through PR and cleanup."
