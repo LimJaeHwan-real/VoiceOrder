@@ -1,0 +1,458 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>McDonald Style Voice Kiosk</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f5efe3] text-slate-900">
+  <div class="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(255,199,44,0.35),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(218,41,28,0.20),_transparent_28%),linear-gradient(180deg,_#f8f1e6_0%,_#efe4d0_100%)]"></div>
+
+  <main class="mx-auto flex min-h-screen max-w-[1600px] flex-col gap-6 px-4 py-5 lg:px-6">
+    <section class="overflow-hidden rounded-[2rem] border border-[#f8d86a] bg-[#da291c] text-white shadow-[0_24px_90px_rgba(123,20,13,0.28)]">
+      <div class="grid gap-6 px-6 py-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
+        <div>
+          <div class="inline-flex items-center gap-3 rounded-full bg-white/12 px-4 py-2 text-sm font-bold tracking-[0.24em] text-[#ffd34d]">
+            <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#ffc72c]"></span>
+            VOICE ORDER KIOSK
+          </div>
+          <h1 class="mt-5 text-4xl font-black leading-tight tracking-tight lg:text-6xl">음성으로 바로 주문하는 패스트푸드 키오스크</h1>
+          <p class="mt-4 max-w-2xl text-base leading-7 text-white/85 lg:text-lg">
+            강한 레드와 골드 포인트를 중심으로, 매장용 풀스크린에서도 한눈에 보이는 패스트푸드 키오스크 스타일로 구성했습니다.
+            메뉴를 보다가 직접 담거나, 음성으로 빠르게 주문할 수 있습니다.
+          </p>
+        </div>
+
+        <div class="grid gap-3 self-end sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          <div class="rounded-[1.5rem] bg-[#ffc72c] px-4 py-4 text-[#5c130d]">
+            <p class="text-xs font-extrabold tracking-[0.2em]">STATUS</p>
+            <p id="speechStatus" class="mt-2 text-xl font-black">대기 중</p>
+          </div>
+          <div class="rounded-[1.5rem] bg-white px-4 py-4 text-[#5c130d]">
+            <p class="text-xs font-extrabold tracking-[0.2em] text-[#a1540b]">TRANSCRIPT</p>
+            <p id="transcriptPreview" class="mt-2 line-clamp-2 min-h-12 text-sm font-bold">아직 없음</p>
+          </div>
+          <div class="rounded-[1.5rem] bg-[#6f1a14] px-4 py-4 text-white">
+            <p class="text-xs font-extrabold tracking-[0.2em] text-[#ffd34d]">TOTAL</p>
+            <p id="heroTotal" class="mt-2 text-xl font-black">0원</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid flex-1 gap-6 lg:grid-cols-[1.45fr_0.85fr]">
+      <section class="rounded-[2rem] border border-[#e5d5b8] bg-[#fbf7ef]/95 p-5 shadow-[0_18px_60px_rgba(92,19,13,0.08)] backdrop-blur">
+        <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm font-extrabold uppercase tracking-[0.2em] text-[#b27b12]">Menu Board</p>
+            <h2 class="mt-1 text-3xl font-black text-[#5c130d]">추천 메뉴</h2>
+            <p class="text-sm text-[#8a5a32]">DB에서 불러온 메뉴를 패스트푸드 키오스크 카드 스타일로 보여줍니다.</p>
+          </div>
+          <button id="reloadMenusButton" class="rounded-full border-2 border-[#da291c] bg-white px-5 py-2.5 text-sm font-black text-[#da291c] transition hover:bg-[#fff4ec]">
+            메뉴 새로고침
+          </button>
+        </div>
+
+        <div id="menuGrid" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div class="rounded-[1.75rem] border border-dashed border-[#d7b98a] bg-white px-6 py-10 text-center text-[#a77c4e]">메뉴를 불러오는 중...</div>
+        </div>
+      </section>
+
+      <aside class="flex flex-col gap-6">
+        <section class="rounded-[2rem] border border-[#f0c24b] bg-[#202020] p-5 text-white shadow-[0_20px_70px_rgba(0,0,0,0.22)]">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-extrabold uppercase tracking-[0.25em] text-[#ffc72c]">Drive Thru Voice</p>
+              <h2 class="mt-2 text-3xl font-black">음성 주문</h2>
+            </div>
+            <span id="supportBadge" class="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white/80">지원 확인 중</span>
+          </div>
+
+          <button id="voiceButton" class="mt-5 w-full rounded-[1.75rem] bg-[#ffc72c] px-6 py-5 text-lg font-black text-[#4d120d] transition hover:bg-[#ffd95a] disabled:cursor-not-allowed disabled:bg-[#555] disabled:text-slate-300">
+            음성으로 주문하기
+          </button>
+
+          <p class="mt-4 text-sm leading-6 text-white/70">예시: "아이스 아메리카노 두 잔이랑 케이크 하나 주세요"</p>
+
+          <div class="mt-5 rounded-[1.75rem] border border-white/10 bg-white/5 p-4">
+            <p class="text-xs font-extrabold uppercase tracking-[0.25em] text-[#ffc72c]">실시간 인식 텍스트</p>
+            <p id="liveTranscript" class="mt-3 min-h-24 text-base leading-7 text-white/95">버튼을 누르면 음성 인식이 시작됩니다.</p>
+          </div>
+
+          <div class="mt-4 rounded-[1.75rem] bg-[#2a2a2a] p-4">
+            <p class="text-xs font-extrabold uppercase tracking-[0.25em] text-[#ffc72c]">응답 메시지</p>
+            <p id="voiceMessage" class="mt-3 text-sm leading-6 text-white/80">아직 분석된 주문이 없습니다.</p>
+          </div>
+        </section>
+
+        <section class="rounded-[2rem] border border-[#e5d5b8] bg-white/95 p-5 shadow-[0_18px_60px_rgba(92,19,13,0.08)] backdrop-blur">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-extrabold uppercase tracking-[0.2em] text-[#b27b12]">Order Summary</p>
+              <h2 class="mt-1 text-3xl font-black text-[#5c130d]">장바구니</h2>
+            </div>
+            <button id="clearCartButton" class="rounded-full bg-[#fff1cf] px-4 py-2 text-sm font-black text-[#8a4c00] transition hover:bg-[#ffe29a]">
+              비우기
+            </button>
+          </div>
+
+          <div id="cartItems" class="mt-5 space-y-3">
+            <div class="rounded-[1.75rem] border border-dashed border-[#d7b98a] bg-[#fffdf9] px-4 py-8 text-center text-[#a77c4e]">장바구니가 비어 있습니다.</div>
+          </div>
+
+          <div class="mt-5 rounded-[1.75rem] bg-[#5c130d] px-5 py-4 text-white">
+            <div class="flex items-center justify-between text-sm text-white/70">
+              <span>총 결제 금액</span>
+              <span id="cartCount">0개 상품</span>
+            </div>
+            <p id="totalPrice" class="mt-2 text-4xl font-black text-[#ffc72c]">0원</p>
+          </div>
+
+          <button id="confirmButton" class="mt-5 w-full rounded-[1.75rem] bg-[#da291c] px-6 py-4 text-lg font-black text-white transition hover:bg-[#bf1f14] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400" disabled>
+            결제하기
+          </button>
+
+          <p id="confirmMessage" class="mt-4 text-sm leading-6 text-[#7a5e49]">결제 전까지는 DB에 저장되지 않습니다.</p>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      menus: [],
+      cart: [],
+      transcript: "",
+      recognition: null,
+      listening: false,
+    };
+
+    const menuGrid = document.getElementById("menuGrid");
+    const cartItems = document.getElementById("cartItems");
+    const totalPrice = document.getElementById("totalPrice");
+    const heroTotal = document.getElementById("heroTotal");
+    const cartCount = document.getElementById("cartCount");
+    const voiceButton = document.getElementById("voiceButton");
+    const confirmButton = document.getElementById("confirmButton");
+    const liveTranscript = document.getElementById("liveTranscript");
+    const transcriptPreview = document.getElementById("transcriptPreview");
+    const voiceMessage = document.getElementById("voiceMessage");
+    const confirmMessage = document.getElementById("confirmMessage");
+    const speechStatus = document.getElementById("speechStatus");
+    const supportBadge = document.getElementById("supportBadge");
+    let permissionStream = null;
+
+    function formatPrice(value) {
+      return new Intl.NumberFormat("ko-KR").format(value) + "원";
+    }
+
+    function setStatus(message) {
+      speechStatus.textContent = message;
+    }
+
+    function renderMenus() {
+      if (!state.menus.length) {
+        menuGrid.innerHTML = '<div class="rounded-[1.75rem] border border-dashed border-[#d7b98a] bg-white px-6 py-10 text-center text-[#a77c4e]">메뉴 데이터가 없습니다.</div>';
+        return;
+      }
+
+      menuGrid.innerHTML = state.menus.map((menu, index) => `
+        <article class="group overflow-hidden rounded-[1.85rem] border border-[#ecd8b7] bg-white shadow-[0_14px_40px_rgba(92,19,13,0.08)] transition hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(92,19,13,0.14)]">
+          <div class="relative aspect-[4/3] overflow-hidden bg-[#f3eadb]">
+            <img src="${menu.image_url}" alt="${menu.name}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
+            <div class="absolute left-3 top-3 rounded-full bg-[#da291c] px-3 py-1 text-xs font-black tracking-[0.18em] text-white">${String(index + 1).padStart(2, "0")}</div>
+          </div>
+          <div class="space-y-4 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-xl font-black text-[#5c130d]">${menu.name}</h3>
+                <p class="mt-1 text-sm text-[#8a5a32]">빠르게 담고 음성으로도 주문 가능</p>
+              </div>
+              <span class="rounded-full bg-[#ffc72c] px-3 py-1 text-sm font-black text-[#5c130d]">${formatPrice(menu.price)}</span>
+            </div>
+            <button
+              class="w-full rounded-[1.2rem] bg-[#da291c] px-4 py-3 text-sm font-black text-white transition hover:bg-[#bf1f14]"
+              onclick="addMenuToCart(${menu.id})"
+            >
+              바로 담기
+            </button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderCart() {
+      if (!state.cart.length) {
+        cartItems.innerHTML = '<div class="rounded-[1.75rem] border border-dashed border-[#d7b98a] bg-[#fffdf9] px-4 py-8 text-center text-[#a77c4e]">장바구니가 비어 있습니다.</div>';
+      } else {
+        cartItems.innerHTML = state.cart.map((item) => `
+          <div class="rounded-[1.5rem] border border-[#ecd8b7] bg-[#fffaf2] px-4 py-4 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-lg font-black text-[#5c130d]">${item.name}</p>
+                <p class="mt-1 text-sm text-[#8a5a32]">${formatPrice(item.price)} x ${item.quantity}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-base font-black text-[#da291c]">${formatPrice(item.subtotal)}</p>
+                <div class="mt-3 flex items-center justify-end gap-2">
+                  <button class="rounded-full bg-[#ffe7a6] px-3 py-1 text-sm font-black text-[#7a3f00]" onclick="changeQuantity(${item.menu_id}, -1)">-</button>
+                  <button class="rounded-full bg-[#ffe7a6] px-3 py-1 text-sm font-black text-[#7a3f00]" onclick="changeQuantity(${item.menu_id}, 1)">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      const total = state.cart.reduce((sum, item) => sum + item.subtotal, 0);
+      const count = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+      totalPrice.textContent = formatPrice(total);
+      heroTotal.textContent = formatPrice(total);
+      cartCount.textContent = `${count}개 상품`;
+      confirmButton.disabled = state.cart.length === 0;
+    }
+
+    function mergeCartItems(items) {
+      const merged = new Map(state.cart.map((item) => [item.menu_id, { ...item }]));
+
+      items.forEach((item) => {
+        if (merged.has(item.menu_id)) {
+          const current = merged.get(item.menu_id);
+          current.quantity += item.quantity;
+          current.subtotal = current.price * current.quantity;
+        } else {
+          merged.set(item.menu_id, { ...item });
+        }
+      });
+
+      state.cart = Array.from(merged.values());
+      renderCart();
+    }
+
+    function addMenuToCart(menuId) {
+      const menu = state.menus.find((item) => item.id === menuId);
+      if (!menu) return;
+      mergeCartItems([{ menu_id: menu.id, name: menu.name, price: menu.price, quantity: 1, subtotal: menu.price }]);
+      confirmMessage.textContent = `${menu.name} 1개를 장바구니에 추가했습니다.`;
+    }
+
+    function changeQuantity(menuId, delta) {
+      state.cart = state.cart
+        .map((item) => {
+          if (item.menu_id !== menuId) return item;
+          const quantity = item.quantity + delta;
+          return { ...item, quantity, subtotal: item.price * quantity };
+        })
+        .filter((item) => item.quantity > 0);
+      renderCart();
+    }
+
+    async function ensureMicrophonePermission() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("이 브라우저는 마이크 권한 요청 API를 지원하지 않습니다.");
+      }
+
+      try {
+        permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        permissionStream.getTracks().forEach((track) => track.stop());
+        permissionStream = null;
+        supportBadge.textContent = "마이크 허용됨";
+        voiceMessage.textContent = "마이크 권한이 확인되었습니다. 음성 주문을 시작할 수 있습니다.";
+      } catch (error) {
+        if (error && (error.name === "NotAllowedError" || error.name === "PermissionDeniedError")) {
+          throw new Error("마이크 권한이 차단되어 있습니다. 주소창의 자물쇠 아이콘에서 마이크를 허용으로 변경해 주세요.");
+        }
+        if (error && error.name === "NotFoundError") {
+          throw new Error("사용 가능한 마이크를 찾지 못했습니다. 장치 연결 상태를 확인해 주세요.");
+        }
+        throw new Error("마이크 권한을 확인하지 못했습니다. 브라우저 설정을 확인해 주세요.");
+      }
+    }
+
+    async function updatePermissionStatus() {
+      if (!navigator.permissions || !navigator.permissions.query) {
+        return;
+      }
+
+      try {
+        const status = await navigator.permissions.query({ name: "microphone" });
+        const applyStatus = () => {
+          if (status.state === "granted") {
+            supportBadge.textContent = "마이크 허용됨";
+          } else if (status.state === "denied") {
+            supportBadge.textContent = "마이크 차단됨";
+            voiceMessage.textContent = "브라우저에서 마이크가 차단되어 있습니다. 주소창의 자물쇠 아이콘에서 허용으로 바꿔 주세요.";
+          } else {
+            supportBadge.textContent = "권한 요청 필요";
+          }
+        };
+
+        applyStatus();
+        status.onchange = applyStatus;
+      } catch (error) {
+        // Some browsers do not expose microphone permission state reliably.
+      }
+    }
+
+    async function loadMenus() {
+      menuGrid.innerHTML = '<div class="rounded-[1.75rem] border border-dashed border-[#d7b98a] bg-white px-6 py-10 text-center text-[#a77c4e]">메뉴를 불러오는 중...</div>';
+      const response = await fetch("/api/menus");
+      const data = await response.json();
+      state.menus = data.menus || [];
+      renderMenus();
+    }
+
+    async function sendTranscriptToServer(text) {
+      const response = await fetch("/api/order/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "음성 주문 처리에 실패했습니다.");
+      }
+
+      voiceMessage.textContent = data.message || "주문 분석 완료";
+      if (Array.isArray(data.items) && data.items.length) {
+        mergeCartItems(data.items);
+      }
+    }
+
+    async function confirmOrder() {
+      if (!state.cart.length) return;
+
+      confirmButton.disabled = true;
+      confirmMessage.textContent = "주문을 저장하는 중입니다...";
+
+      try {
+        const response = await fetch("/api/order/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: state.cart.map((item) => ({ menu_id: item.menu_id, quantity: item.quantity })),
+            source_text: state.transcript,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "주문 저장에 실패했습니다.");
+        }
+
+        confirmMessage.textContent = `주문 #${data.order_id} 저장 완료, 총 ${formatPrice(data.total_price)} 결제 처리되었습니다.`;
+        state.cart = [];
+        renderCart();
+      } catch (error) {
+        confirmMessage.textContent = error.message;
+      } finally {
+        confirmButton.disabled = state.cart.length === 0;
+      }
+    }
+
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        supportBadge.textContent = "미지원 브라우저";
+        voiceButton.disabled = true;
+        setStatus("사용 불가");
+        liveTranscript.textContent = "이 브라우저는 Web Speech API를 지원하지 않습니다. Chrome 계열 브라우저를 사용해 주세요.";
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ko-KR";
+      recognition.interimResults = true;
+      recognition.continuous = false;
+
+      recognition.onstart = () => {
+        state.listening = true;
+        setStatus("듣는 중");
+        voiceButton.textContent = "음성 인식 중...";
+        voiceButton.disabled = true;
+        liveTranscript.textContent = "말씀을 듣고 있습니다...";
+      };
+
+      recognition.onresult = async (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0].transcript)
+          .join(" ")
+          .trim();
+
+        liveTranscript.textContent = transcript || "인식된 내용이 없습니다.";
+        transcriptPreview.textContent = transcript || "아직 없음";
+        state.transcript = transcript;
+
+        const lastResult = event.results[event.results.length - 1];
+        if (lastResult && lastResult.isFinal && transcript) {
+          try {
+            await sendTranscriptToServer(transcript);
+          } catch (error) {
+            voiceMessage.textContent = error.message;
+          }
+        }
+      };
+
+      recognition.onerror = (event) => {
+        voiceMessage.textContent = `음성 인식 오류: ${event.error}`;
+      };
+
+      recognition.onend = () => {
+        state.listening = false;
+        setStatus("대기 중");
+        voiceButton.textContent = "음성으로 주문하기";
+        voiceButton.disabled = false;
+      };
+
+      supportBadge.textContent = "사용 가능";
+      state.recognition = recognition;
+    }
+
+    document.getElementById("reloadMenusButton").addEventListener("click", loadMenus);
+    document.getElementById("clearCartButton").addEventListener("click", () => {
+      state.cart = [];
+      renderCart();
+      confirmMessage.textContent = "장바구니를 비웠습니다.";
+    });
+    document.getElementById("voiceButton").addEventListener("click", async () => {
+      if (!state.recognition || state.listening) {
+        return;
+      }
+
+      try {
+        voiceButton.disabled = true;
+        setStatus("권한 확인 중");
+        voiceMessage.textContent = "마이크 권한을 확인하고 있습니다...";
+        await ensureMicrophonePermission();
+        state.recognition.start();
+      } catch (error) {
+        setStatus("권한 필요");
+        voiceMessage.textContent = error.message;
+        voiceButton.disabled = false;
+      }
+    });
+    document.getElementById("confirmButton").addEventListener("click", confirmOrder);
+
+    window.addMenuToCart = addMenuToCart;
+    window.changeQuantity = changeQuantity;
+
+    initSpeechRecognition();
+    updatePermissionStatus();
+    loadMenus().catch((error) => {
+      menuGrid.innerHTML = `<div class="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-8 text-center text-rose-600">${error.message}</div>`;
+    });
+    renderCart();
+  </script>
+</body>
+</html>
+
+
+
