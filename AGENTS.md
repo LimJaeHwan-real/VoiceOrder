@@ -1,12 +1,12 @@
 ﻿# AGENTS.md
 
-이 문서는 `C:\Users\home\workspace\jungle\codex`에서 작업하는 에이전트를 위한 저장소별 가이드입니다.
-설명은 한국어로 유지하고, 에이전트가 직접 따라야 하는 핵심 규칙은 영어로 작성합니다.
+이 문서는 `C:\Users\home\workspace\jungle\codex`에서 작업하는 에이전트를 위한 저장소 전용 작업 가이드입니다.
+설명과 배경 맥락은 한국어로 정리하고, 에이전트가 직접 따라야 하는 핵심 규칙과 트리거 문장은 영어로 유지합니다.
 
 ## 프로젝트 개요
 
-- 이 저장소는 Python 기반의 키오스크 관련 앱/유틸리티 작업 공간입니다.
-- 현재 확인된 주요 파일:
+- 이 저장소는 Python 기반 키오스크 앱과 관련 유틸리티를 다루는 작업 공간입니다.
+- 현재 기준으로 중요한 파일은 다음과 같습니다.
   - `app.py`: 메인 애플리케이션 진입점으로 보이는 파일
   - `init_db.py`: 데이터베이스 초기화 스크립트
   - `kiosk.db`: 로컬 SQLite 데이터베이스 파일
@@ -23,10 +23,10 @@
 
 ## 작업 원칙
 
-- 먼저 현재 코드 구조를 읽고, 추측보다 기존 구현을 우선합니다.
+- 먼저 현재 코드 구조와 흐름을 읽고, 추측보다 기존 구현을 우선합니다.
 - 요청된 작업에 필요한 최소 범위만 수정합니다.
-- 새로운 패턴을 도입하기 전에 기존 구현과 스타일을 맞춥니다.
-- 관련 파일이 있으면 함께 확인해 변경 영향 범위를 좁힙니다.
+- 새로운 패턴을 도입하기 전에는 기존 구현과 스타일에 맞추는 것을 우선합니다.
+- 관련 파일이 있다면 함께 확인해 변경 영향 범위를 좁힙니다.
 
 ## Python Rules
 
@@ -37,9 +37,9 @@
 
 ## Python 작업 지침
 
-- 작은 스크립트 저장소이므로 과도한 추상화보다 읽기 쉬운 구현을 우선합니다.
+- 작은 스크립트 중심 저장소이므로 과도한 추상화보다 읽기 쉬운 구현을 우선합니다.
 - 복잡한 로직에만 짧은 주석을 추가하고, 자명한 코드에는 주석을 남발하지 않습니다.
-- 함수 분리는 가독성에 도움이 될 때만 적용합니다.
+- 함수 분리는 가독성에 실제로 도움이 될 때만 적용합니다.
 
 ## Database Rules
 
@@ -51,7 +51,7 @@
 
 - `kiosk.db`는 바이너리 산출물이므로 직접 편집하지 않습니다.
 - 스키마나 초기 데이터 변경이 필요하면 `init_db.py` 또는 관련 초기화 로직을 수정합니다.
-- DB 변경은 가능한 한 재생성 가능한 절차로 관리합니다.
+- DB 변경은 가능한 한 재현 가능한 초기화 절차로 관리합니다.
 
 ## Template Rules
 
@@ -60,8 +60,8 @@
 
 ## 템플릿 및 리소스
 
-- `templates/` 변경 시 사용자에게 보이는 문자열, 폼 필드, 렌더링 흐름의 영향을 함께 확인합니다.
-- 하드코딩된 경로 또는 문구를 추가하기 전에 기존 패턴을 먼저 확인합니다.
+- `templates/`를 수정할 때는 사용자에게 보이는 문자열, 폼 필드, 렌더링 흐름 영향을 함께 확인합니다.
+- 하드코딩된 경로나 문구를 추가하기 전에는 기존 패턴을 먼저 확인합니다.
 
 ## File Rules
 
@@ -99,6 +99,10 @@
 - 중요한 파일 경로와 검증 여부를 함께 공유합니다.
 - 추가 확인이 필요한 위험 요소가 있으면 숨기지 않고 바로 알립니다.
 ## Skills
+
+아래 섹션은 이 세션에서 사용할 수 있는 스킬과 사용 규칙을 정리한 영역입니다.
+설명 문장은 이해를 돕기 위한 안내이고, 실제로 따를 규칙 문장은 영어 원문을 기준으로 해석합니다.
+
 A skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and file path so you can open the source for full instructions when using a specific skill.
 ### Available skills
 - `git-collaboration-flow`: Use this skill when the user wants help with a standard team Git or GitHub collaboration workflow built around `main`: create a work branch from `main`, commit on that branch, push to `origin`, prepare or open a pull request, merge, clean up merged branches, prune removed remote branches, or sync local `main` after teammates merge code. Useful for English or Korean team requests about branch creation, commits, pushes, PR creation, merges, branch cleanup, `git fetch --prune`, and `git pull origin main`. (file: `C:/Users/home/.codex/skills/git-collaboration-flow/SKILL.md`)
