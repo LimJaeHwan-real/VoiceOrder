@@ -3,217 +3,571 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Green Grounds Coffee Kiosk</title>
+  <title>Voice Order Cafe Kiosk</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --green-900: #123b2e;
+      --green-800: #19533e;
+      --green-700: #1f6a4d;
+      --green-600: #2b7b5d;
+      --green-100: #e7efe8;
+      --cream-50: #f7f4ec;
+      --cream-100: #efe9dd;
+      --text-900: #1e2823;
+      --text-700: #5d675f;
+      --line: rgba(24, 78, 58, 0.16);
+      --panel-shadow: 0 24px 80px rgba(18, 59, 46, 0.12);
+      --card-shadow: 0 18px 44px rgba(18, 59, 46, 0.08);
+    }
+
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
     body {
       font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(164, 186, 157, 0.22), transparent 22%),
+        radial-gradient(circle at 92% 88%, rgba(214, 194, 152, 0.18), transparent 24%),
+        linear-gradient(180deg, #f8f6ef 0%, #f0ebdf 100%);
+      color: var(--text-900);
     }
+
+    .app-shell {
+      background: rgba(255, 252, 246, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      box-shadow: var(--panel-shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .main-panel {
+      background: linear-gradient(180deg, rgba(247, 244, 236, 0.98), rgba(243, 238, 228, 0.98));
+      border: 1px solid rgba(29, 84, 62, 0.08);
+    }
+
+    .search-shell {
+      background: rgba(255, 255, 255, 0.78);
+      border: 1.5px solid rgba(31, 106, 77, 0.6);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .search-input {
+      background: transparent;
+      outline: none;
+      width: 100%;
+      font-size: 15px;
+      font-weight: 600;
+      color: #27352d;
+    }
+
+    .search-input::placeholder {
+      color: #7b857e;
+      font-weight: 500;
+    }
+
+    .category-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 168px;
+      border-radius: 30px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.74);
+    }
+
+    .category-card::after {
+      content: "";
+      position: absolute;
+      right: -16px;
+      bottom: -20px;
+      width: 144px;
+      height: 144px;
+      border-radius: 9999px;
+      opacity: 0.16;
+      background: radial-gradient(circle, currentColor 0%, transparent 68%);
+      pointer-events: none;
+    }
+
+    .category-card.primary {
+      background: linear-gradient(135deg, #066a2c 0%, #045f28 100%);
+      color: white;
+      border-color: rgba(6, 106, 44, 0.92);
+      box-shadow: 0 22px 44px rgba(6, 106, 44, 0.18);
+    }
+
+    .tab-button {
+      border: 1px solid rgba(31, 106, 77, 0.16);
+      background: rgba(255, 255, 255, 0.82);
+      color: #425048;
+      transition: all 0.2s ease;
+    }
+
+    .tab-button.active {
+      background: #0d6a32;
+      border-color: #0d6a32;
+      color: white;
+      box-shadow: 0 12px 28px rgba(13, 106, 50, 0.18);
+    }
+
+    .product-card {
+      background: linear-gradient(180deg, rgba(255, 253, 249, 0.98), rgba(248, 244, 236, 0.98));
+      border: 1px solid rgba(31, 106, 77, 0.38);
+      border-radius: 28px;
+      box-shadow: var(--card-shadow);
+      min-height: 246px;
+    }
+
+    .product-image-shell {
+      position: relative;
+      height: 138px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(238, 229, 210, 0.95), rgba(238, 229, 210, 0.36) 42%, rgba(255, 255, 255, 0) 68%),
+        linear-gradient(180deg, #f8f2e7 0%, #f1e7d7 100%);
+    }
+
+    .side-panel {
+      background: linear-gradient(180deg, rgba(255, 253, 249, 0.96), rgba(246, 241, 232, 0.96));
+      border: 1px solid rgba(31, 106, 77, 0.14);
+      box-shadow: 0 20px 52px rgba(18, 59, 46, 0.09);
+    }
+
+    .voice-panel {
+      background: linear-gradient(180deg, #1f5a43 0%, #163f30 100%);
+      box-shadow: 0 24px 60px rgba(18, 59, 46, 0.22);
+    }
+
+    .pill-soft {
+      border: 1px solid rgba(31, 106, 77, 0.28);
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .order-item {
+      border: 1px solid rgba(31, 106, 77, 0.16);
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 10px 24px rgba(18, 59, 46, 0.05);
+    }
+
+    @media (max-width: 1279px) {
+      .category-card {
+        min-height: 148px;
+      }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 199, 44, 0.22); }
+      50% { transform: scale(1.02); box-shadow: 0 0 0 12px rgba(255, 199, 44, 0); }
+    }
+
+    @keyframes scanLine {
+      0% { transform: translateY(-110px); opacity: 0; }
+      15% { opacity: 0.9; }
+      100% { transform: translateY(110px); opacity: 0; }
+    }
+
+    .brand-button { position: relative; overflow: hidden; }
+    .brand-button::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.22) 45%, transparent 90%);
+      transform: translateX(-120%);
+      transition: transform 0.6s ease;
+    }
+    .brand-button:hover::after { transform: translateX(120%); }
+    .payment-glow { animation: glowPulse 1.8s infinite; }
+    .scan-line { animation: scanLine 2.2s linear infinite; }
   </style>
 </head>
-<body class="min-h-screen overflow-x-hidden bg-[#bac7a7] text-[#14281d]">
-  <div class="fixed inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.45),_transparent_32%),linear-gradient(135deg,_#a3b78e_0%,_#cad3b9_48%,_#9eb287_100%)]"></div>
-  <div class="fixed inset-0 -z-10 bg-[linear-gradient(120deg,rgba(255,255,255,0.12)_0%,transparent_24%,rgba(255,255,255,0.08)_45%,transparent_62%)]"></div>
-
-  <main class="mx-auto min-h-screen max-w-[1600px] px-3 py-3 lg:px-6 lg:py-6">
-    <section class="overflow-hidden rounded-[2.6rem] border border-[#161616] bg-[#efeee3] shadow-[0_35px_120px_rgba(31,45,22,0.28)]">
-      <div class="mx-auto mt-2 h-7 w-36 rounded-b-[1rem] bg-black lg:h-9 lg:w-44"></div>
-
-      <div class="grid gap-5 p-4 lg:grid-cols-[minmax(0,1.6fr)_360px] lg:p-5">
-        <section class="min-w-0 rounded-[2rem] bg-[#f4f1e7] p-4 lg:p-5">
-          <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex items-center gap-4 lg:gap-6">
-              <div class="leading-none text-[#17643a]">
-                <p class="text-[0.7rem] font-black tracking-[0.15em]">GREEN</p>
-                <p class="-mt-1 text-[0.7rem] font-black tracking-[0.15em]">GROUNDS</p>
-                <p class="-mt-1 text-[0.7rem] font-black tracking-[0.15em]">COFFEE</p>
+<body class="min-h-screen">
+  <main class="mx-auto max-w-[1600px] px-4 py-4 lg:px-5 lg:py-5">
+    <div class="app-shell rounded-[34px] p-4 lg:p-5">
+      <div class="main-panel rounded-[30px] p-4 lg:p-6">
+        <section class="grid gap-5 xl:grid-cols-[1.58fr_0.68fr]">
+          <section class="min-w-0">
+            <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div class="flex items-center gap-6">
+                <div class="flex h-[88px] w-[118px] flex-col justify-center rounded-[26px] bg-[#f2eee5] px-4 text-[14px] font-black uppercase leading-[0.92] tracking-[-0.04em] text-[#10653d] ring-1 ring-[#d6ded7]">
+                  <span>GREEN</span>
+                  <span>GROUNDS</span>
+                  <span>COFFEE</span>
+                </div>
+                <div>
+                  <p class="text-[15px] font-bold text-[#166341]">Thursday, 23 June</p>
+                  <p class="mt-2 text-[13px] text-[#6b746d]">Cafe kiosk ordering dashboard</p>
+                </div>
               </div>
-              <div>
-                <p id="todayLabel" class="text-lg font-bold text-[#17643a]">Thursday, 23 June</p>
-                <p class="mt-1 text-sm text-[#71806c]">Fresh brews and quick voice ordering</p>
+
+              <div class="flex flex-wrap items-center justify-end gap-3">
+                <div class="text-right text-[14px] text-[#566159]">
+                  <p>Total : <span class="font-semibold text-[#1d2a24]">20 Orders</span></p>
+                </div>
+                <button class="pill-soft flex h-14 items-center gap-2 rounded-full px-5 text-[15px] font-semibold text-[#233129]">
+                  <span>Report</span>
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2.5h5l4 4V17a.5.5 0 0 1-.5.5h-8A.5.5 0 0 1 6 17V2.5Z"></path><path d="M11 2.5V7h4"></path></svg>
+                </button>
+                <button class="pill-soft relative flex h-14 w-14 items-center justify-center rounded-full text-[#233129]">
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3.5a4 4 0 0 0-4 4v2.1L4.8 12a1 1 0 0 0 .9 1.5h8.6a1 1 0 0 0 .9-1.5L14 9.6V7.5a4 4 0 0 0-4-4Z"></path><path d="M8.5 15a1.5 1.5 0 0 0 3 0"></path></svg>
+                  <span class="absolute right-3 top-3 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold leading-4 text-white">1</span>
+                </button>
+                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-[#d5ddd4]">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#14563b,#4d9f78)] text-sm font-bold text-white">SO</div>
+                </div>
+              </div>
+            </header>
+
+            <div class="mt-6 flex items-center gap-4">
+              <div class="search-shell flex h-[74px] flex-1 items-center rounded-[28px] px-6">
+                <svg class="h-6 w-6 text-[#1f6a4d]" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="5.5"></circle><path d="M13.5 13.5L18 18"></path></svg>
+                <div class="ml-4 flex-1">
+                  <input id="menuSearchInput" class="search-input" type="text" placeholder="메뉴명을 검색해 보세요" autocomplete="off">
+                </div>
+                <button id="clearSearchButton" class="rounded-full bg-[#edf3ee] px-4 py-2 text-[13px] font-semibold text-[#1f6a4d]">지우기</button>
               </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-3">
-              <div class="rounded-full px-4 py-2 text-sm font-medium text-[#37463c]">
-                Total : <span id="orderCountBadge" class="font-semibold">0 Orders</span>
+            <div class="mt-5 grid gap-4 lg:grid-cols-[1.22fr_1.12fr_1.12fr]">
+              <article class="category-card primary p-5">
+                <div class="relative z-10 flex h-full flex-col justify-between">
+                  <div class="inline-flex w-fit rounded-full border border-white/35 px-4 py-2 text-[13px] font-semibold text-white/95">Coffee</div>
+                  <div>
+                    <h2 class="text-[41px] font-black tracking-[-0.05em]">커피</h2>
+                    <p id="coffeeCountLabel" class="mt-1 text-[18px] text-white/82">0 items</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="category-card p-5 text-[#1d2a24]">
+                <div class="relative z-10 flex h-full flex-col justify-between">
+                  <div class="inline-flex w-fit rounded-full border border-[#55675c] px-4 py-2 text-[13px] font-semibold text-[#344038]">Non-Coffee</div>
+                  <div>
+                    <h2 class="text-[39px] font-black tracking-[-0.05em]">논커피</h2>
+                    <p id="nonCoffeeCountLabel" class="mt-1 text-[18px] text-[#6c746e]">0 items</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="category-card p-5 text-[#1d2a24]">
+                <div class="relative z-10 flex h-full flex-col justify-between">
+                  <div class="inline-flex w-fit rounded-full border border-[#8f6f42] bg-[#f7efe1] px-4 py-2 text-[13px] font-semibold text-[#8c6a38]">Dessert</div>
+                  <div>
+                    <h2 class="text-[39px] font-black tracking-[-0.05em]">디저트</h2>
+                    <p id="dessertCountLabel" class="mt-1 text-[18px] text-[#6c746e]">0 items</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+              <div id="categoryTabs" class="flex flex-wrap gap-2"></div>
+              <div class="text-[13px] font-medium text-[#6c746d]">
+                <span id="resultSummary">전체 메뉴를 보여주고 있습니다.</span>
               </div>
-              <button id="reloadMenusButton" class="flex h-14 items-center gap-3 rounded-full bg-white px-5 text-base font-semibold text-[#2c302f] shadow-[0_12px_30px_rgba(20,40,29,0.08)] transition hover:-translate-y-0.5">
-                <span>Report</span>
-                <svg class="h-5 w-5 text-[#274632]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M7 3.75h7.25L19.25 8v12.25a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.75a1 1 0 0 1 1-1Z"></path>
-                  <path d="M14 3.75V8h5.25"></path>
-                  <path d="M9 12h6"></path>
-                  <path d="M9 16h6"></path>
-                </svg>
+            </div>
+
+            <section id="browseRecommendationPanel" class="mt-5 hidden rounded-[28px] border border-[#cfe0d3] bg-white/86 p-5 shadow-[0_18px_44px_rgba(18,59,46,0.08)]">
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p class="text-[12px] font-semibold uppercase tracking-[0.22em] text-[#5d7b68]">Filtered View</p>
+                  <h3 id="browseRecommendationTitle" class="mt-2 text-[24px] font-black tracking-[-0.04em] text-[#1e2a24]">조건에 맞는 메뉴로 필터링했어요.</h3>
+                  <p id="browseRecommendationMessage" class="mt-2 text-[14px] leading-6 text-[#637067]">조건에 맞는 메뉴를 아래 메뉴판에서 보여주고 있습니다.</p>
+                </div>
+                <button id="clearBrowseButton" class="rounded-full bg-[#edf3ee] px-4 py-2 text-[13px] font-semibold text-[#1f6a4d]">전체 메뉴 보기</button>
+              </div>
+            </section>
+
+            <div id="menuGrid" class="mt-5 grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+              <div class="rounded-[28px] border border-dashed border-[#b5c8ba] bg-white px-6 py-12 text-center text-[#60756a]">메뉴를 불러오는 중...</div>
+            </div>
+          </section>
+
+          <aside class="side-panel rounded-[30px] p-4 lg:p-5">
+            <div class="flex items-center gap-4 rounded-[26px] bg-white px-4 py-4 ring-1 ring-[#d8e0d8]">
+              <button class="flex h-14 w-14 items-center justify-center rounded-full border border-[#2f7557] text-[#1f6a4d]">
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4l6 6-6 6"></path></svg>
               </button>
-              <div class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-[0_12px_30px_rgba(20,40,29,0.08)]">
-                <svg class="h-6 w-6 text-[#25382d]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M14.86 17.5H9.14a2.75 2.75 0 0 1-2.74-3.03L7.1 8.5a4.9 4.9 0 0 1 9.8 0l.7 5.97a2.75 2.75 0 0 1-2.74 3.03Z"></path>
-                  <path d="M9.75 20.25a2.25 2.25 0 0 0 4.5 0"></path>
-                </svg>
-                <span class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">1</span>
-              </div>
-              <div class="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#2d7a4d] bg-[linear-gradient(135deg,#d4b38a,#6f4d32)] text-sm font-black text-white shadow-[0_12px_30px_rgba(20,40,29,0.08)]">
-                GG
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[12px] font-semibold uppercase tracking-[0.18em] text-[#87928b]">Purchase Receipt</p>
+                <p class="mt-1 text-[28px] font-black tracking-[-0.05em] text-[#1d2a24]">#27362</p>
               </div>
             </div>
-          </header>
 
-          <div class="mt-6">
-            <label class="flex items-center gap-4 rounded-full border border-[#4f9969] bg-white px-5 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.4)]">
-              <svg class="h-6 w-6 text-[#22392c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="m20 20-3.5-3.5"></path>
-              </svg>
-              <input id="searchInput" type="search" placeholder="Search" class="w-full bg-transparent text-lg font-medium text-[#1d2b22] outline-none placeholder:text-[#2e322f]">
-              <svg class="h-6 w-6 text-[#265e3c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M9 5v14"></path>
-                <path d="M5 9h8"></path>
-                <path d="M16 4v7"></path>
-                <path d="M12.5 7.5H19.5"></path>
-              </svg>
-            </label>
+            <div class="mt-4 rounded-[30px] px-1 py-1 ring-1 ring-[#cfd8cf]">
+              <div class="grid grid-cols-2 rounded-[24px] bg-[#f5f2ea] p-1 text-[15px] font-semibold">
+                <div class="rounded-[20px] bg-[#0d6a32] px-4 py-3 text-center text-white">Dine In</div>
+                <div class="rounded-[20px] px-4 py-3 text-center text-[#7f8682]">Take Away</div>
+              </div>
+            </div>
+
+            <div class="mt-5 grid grid-cols-2 gap-3">
+              <div>
+                <p class="mb-2 text-[13px] text-[#77817a]">Customer name</p>
+                <div class="rounded-[18px] border border-[#2f7557] bg-white px-4 py-4 text-[18px] font-semibold text-[#1f2c25]">Suji</div>
+              </div>
+              <div>
+                <p class="mb-2 text-[13px] text-[#77817a]">Table</p>
+                <div class="rounded-[18px] border border-[#d6ddd6] bg-white px-4 py-4 text-[18px] font-semibold text-[#1f2c25]">B1</div>
+              </div>
+            </div>
+
+            <div class="voice-panel mt-5 rounded-[28px] p-5 text-white">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-[12px] font-semibold uppercase tracking-[0.24em] text-white/65">Voice Barista</p>
+                  <h2 class="mt-2 text-[30px] font-black tracking-[-0.04em]">음성 주문</h2>
+                </div>
+                <span id="supportBadge" class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-white/82">지원 확인 중</span>
+              </div>
+
+              <div class="mt-5 grid grid-cols-2 gap-3">
+                <div class="rounded-[20px] bg-white/10 px-4 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.22em] text-white/58">Status</p>
+                  <p id="speechStatus" class="mt-2 text-[18px] font-black">대기 중</p>
+                </div>
+                <div class="rounded-[20px] bg-white/10 px-4 py-3">
+                  <p class="text-[11px] uppercase tracking-[0.22em] text-white/58">Total</p>
+                  <p id="heroTotal" class="mt-2 text-[18px] font-black">0원</p>
+                </div>
+              </div>
+
+              <button id="voiceButton" class="mt-4 w-full rounded-[22px] bg-[#f3ead9] px-6 py-5 text-[18px] font-black text-[#194232] transition hover:bg-[#fbf4e8] disabled:cursor-not-allowed disabled:bg-[#6d7771] disabled:text-[#e6e9e6]">
+                음성으로 주문하기
+              </button>
+
+              <div class="mt-4 rounded-[22px] bg-white/8 p-4">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/58">Transcript</p>
+                <p id="transcriptPreview" class="mt-2 text-[13px] leading-6 text-white/82">아직 없음</p>
+              </div>
+
+            <div class="mt-3 rounded-[22px] bg-[#0f281f] p-4">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/58">실시간 인식 텍스트</p>
+              <p id="liveTranscript" class="mt-2 min-h-[88px] text-[14px] leading-6 text-white/88">버튼을 누르면 음성 인식이 시작됩니다.</p>
+            </div>
+
+            <p id="voiceMessage" class="mt-4 text-[13px] leading-6 text-white/76">아직 분석된 주문이 없습니다.</p>
+            <button id="undoLastVoiceButton" class="mt-3 hidden rounded-full bg-white/12 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-white/18">
+              방금 담은 항목 되돌리기
+            </button>
           </div>
 
-          <section class="mt-5 grid gap-3 lg:grid-cols-3">
-            <article class="relative overflow-hidden rounded-[2rem] bg-[#046a2d] p-5 text-white">
-              <div class="inline-flex rounded-full border border-white/70 px-4 py-1 text-sm font-medium">Available</div>
-              <div class="mt-14">
-                <p class="text-[2rem] font-semibold leading-none">Coffee</p>
-                <p id="coffeeCategoryCount" class="mt-2 text-base text-white/80">0 items</p>
+            <section class="mt-5">
+              <div class="flex items-center justify-between">
+                <p class="text-[14px] font-semibold text-[#6f7871]">Order list</p>
+                <button id="clearCartButton" class="rounded-full bg-[#edf3ee] px-4 py-2 text-[13px] font-semibold text-[#1d6545]">비우기</button>
               </div>
-              <div class="absolute -bottom-6 right-0 text-[8rem] font-black leading-none text-white/15">☕</div>
-            </article>
 
-            <article class="relative overflow-hidden rounded-[2rem] border border-[#e4e0d6] bg-white p-5 text-[#151515]">
-              <div class="inline-flex rounded-full border border-[#4b4b4b] px-4 py-1 text-sm font-medium">Available</div>
-              <div class="mt-14">
-                <p class="text-[2rem] font-semibold leading-none">Tea</p>
-                <p id="teaCategoryCount" class="mt-2 text-base text-[#616161]">0 items</p>
+              <div id="cartItems" class="mt-4 space-y-3">
+                <div class="rounded-[24px] border border-dashed border-[#b5c8ba] bg-white px-4 py-10 text-center text-[#60756a]">장바구니가 비어 있습니다.</div>
               </div>
-              <div class="absolute -bottom-7 right-2 text-[8rem] font-black leading-none text-[#d8d5cf]">🍵</div>
-            </article>
 
-            <article class="relative overflow-hidden rounded-[2rem] border border-[#e4e0d6] bg-[#f8f8f6] p-5 text-[#151515]">
-              <div class="inline-flex rounded-full bg-[#ff6d6d] px-4 py-1 text-sm font-medium text-white">Need to re-stock</div>
-              <div class="mt-14">
-                <p class="text-[2rem] font-semibold leading-none">Snack</p>
-                <p id="snackCategoryCount" class="mt-2 text-base text-[#616161]">0 items</p>
+              <div class="mt-5 rounded-[26px] bg-[#173f30] px-5 py-5 text-white">
+                <div class="flex items-center justify-between text-[13px] text-white/62">
+                  <span>총 결제 금액</span>
+                  <span id="cartCount">0개 상품</span>
+                </div>
+                <p id="totalPrice" class="mt-2 text-[38px] font-black tracking-[-0.05em] text-[#f1e7d4]">0원</p>
               </div>
-              <div class="absolute -bottom-8 right-1 text-[8rem] font-black leading-none text-[#dfdfda]">🥐</div>
-            </article>
-          </section>
 
-          <section class="mt-5">
-            <div id="menuGrid" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div class="rounded-[2rem] border border-dashed border-[#8bb08e] bg-white/80 px-6 py-10 text-center text-[#56705c]">메뉴를 불러오는 중...</div>
-            </div>
-          </section>
+              <button id="confirmButton" class="mt-4 w-full rounded-[22px] bg-[#1f6a4d] px-6 py-4 text-[18px] font-black text-white transition hover:bg-[#18563f] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400" disabled>결제하기</button>
+              <p id="confirmMessage" class="mt-3 text-[13px] leading-6 text-[#707971]">결제 전까지는 DB에 저장되지 않습니다.</p>
+              <button id="reloadMenusButton" class="mt-3 w-full rounded-[20px] border border-[#d6ddd6] bg-white px-5 py-3 text-[14px] font-semibold text-[#2c3c33] transition hover:bg-[#f8faf8]">메뉴 새로고침</button>
+            </section>
+          </aside>
         </section>
-
-        <aside class="flex min-h-full flex-col gap-4 rounded-[2rem] bg-[#f8f7f2] p-4 shadow-[inset_0_0_0_1px_rgba(31,45,22,0.04)]">
-          <div class="flex items-center gap-4 rounded-[1.8rem] bg-white p-4 shadow-[0_14px_30px_rgba(20,40,29,0.08)]">
-            <button class="flex h-16 w-16 items-center justify-center rounded-full border border-[#4d8c63] text-[#20342a]">
-              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="m14.5 6.5-5 5 5 5"></path>
-              </svg>
-            </button>
-            <div>
-              <p class="text-sm text-[#6f736f]">Purchase Receipt</p>
-              <p id="receiptNumber" class="mt-1 text-2xl font-bold text-[#171d18]">#00000</p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 rounded-full border border-[#4f9969] bg-white p-1 text-sm font-semibold text-[#7f807c]">
-            <button class="rounded-full bg-[#046a2d] px-4 py-3 text-white">Dine In</button>
-            <button class="rounded-full px-4 py-3">Take Away</button>
-          </div>
-
-          <section class="rounded-[1.8rem] bg-white p-4 shadow-[0_14px_30px_rgba(20,40,29,0.08)]">
-            <div class="grid gap-3 sm:grid-cols-2">
-              <div>
-                <p class="text-sm text-[#6d726d]">Customer name</p>
-                <div class="mt-2 rounded-full border border-[#4f9969] px-4 py-3 font-semibold text-[#1f2c22]">Muadz</div>
-              </div>
-              <div>
-                <p class="text-sm text-[#6d726d]">Table no</p>
-                <div class="mt-2 rounded-full border border-[#4f9969] px-4 py-3 font-semibold text-[#1f2c22]">B1</div>
-              </div>
-            </div>
-          </section>
-
-          <section class="rounded-[1.8rem] bg-[#0f1f16] p-4 text-white shadow-[0_20px_50px_rgba(19,32,24,0.28)]">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#a7cfb0]">Voice Assistant</p>
-                <p id="speechStatus" class="mt-2 text-2xl font-semibold">대기 중</p>
-              </div>
-              <span id="supportBadge" class="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80">지원 확인 중</span>
-            </div>
-
-            <button id="voiceButton" class="mt-4 w-full rounded-[1.4rem] bg-[#d7e8d5] px-5 py-4 text-left text-[#163120] transition hover:bg-white disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40">
-              <span class="block text-lg font-semibold">음성으로 주문하기</span>
-              <span class="mt-1 block text-sm text-[#476353]">예시: 아이스 아메리카노 두 잔 주세요</span>
-            </button>
-
-            <div class="mt-4 rounded-[1.4rem] bg-white/5 p-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#a7cfb0]">Live Transcript</p>
-              <p id="liveTranscript" class="mt-3 min-h-16 text-sm leading-6 text-white/88">버튼을 누르면 음성 인식이 시작됩니다.</p>
-            </div>
-
-            <div class="mt-3 rounded-[1.4rem] bg-white/5 p-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#a7cfb0]">Last Transcript</p>
-              <p id="transcriptPreview" class="mt-3 min-h-12 text-sm leading-6 text-white/80">아직 없음</p>
-            </div>
-
-            <div class="mt-3 rounded-[1.4rem] bg-white/5 p-4">
-              <p class="text-xs font-semibold uppercase tracking-[0.22em] text-[#a7cfb0]">Message</p>
-              <p id="voiceMessage" class="mt-3 text-sm leading-6 text-white/80">아직 분석된 주문이 없습니다.</p>
-            </div>
-          </section>
-
-          <section class="flex min-h-0 flex-1 flex-col rounded-[1.8rem] bg-white p-4 shadow-[0_14px_30px_rgba(20,40,29,0.08)]">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-sm text-[#6d726d]">Order list</p>
-                <p class="text-xl font-semibold text-[#18251d]">Current Items</p>
-              </div>
-              <button id="clearCartButton" class="rounded-full border border-[#c7d8c8] px-4 py-2 text-sm font-medium text-[#365640] transition hover:bg-[#edf4ec]">비우기</button>
-            </div>
-
-            <div id="cartItems" class="mt-4 flex-1 space-y-3 overflow-auto pr-1">
-              <div class="rounded-[1.5rem] border border-dashed border-[#b8ccb9] bg-[#fafaf6] px-4 py-8 text-center text-[#6a7a6d]">장바구니가 비어 있습니다.</div>
-            </div>
-
-            <div class="mt-4 rounded-[1.6rem] bg-[#f4f5ef] p-4">
-              <div class="flex items-center justify-between text-sm text-[#6b726b]">
-                <span>Payment Details</span>
-                <span id="cartCount">0개 상품</span>
-              </div>
-              <p id="totalPrice" class="mt-2 text-3xl font-semibold text-[#12251a]">0원</p>
-              <p id="heroTotal" class="mt-1 text-sm text-[#6d726d]">0원</p>
-            </div>
-
-            <button id="confirmButton" class="mt-4 rounded-[1.4rem] bg-[#046a2d] px-6 py-4 text-base font-semibold text-white transition hover:bg-[#035724] disabled:cursor-not-allowed disabled:bg-[#d5ddd4] disabled:text-[#7c867d]" disabled>
-              결제하기
-            </button>
-            <p id="confirmMessage" class="mt-3 text-sm leading-6 text-[#667167]">결제 전까지는 DB에 저장되지 않습니다.</p>
-          </section>
-        </aside>
       </div>
-    </section>
+    </div>
   </main>
 
+  <div id="paymentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-[3px]">
+    <div class="w-full max-w-[860px] overflow-hidden rounded-[2rem] border border-[#d8c8ab] bg-[#f7f1e7] shadow-[0_28px_90px_rgba(0,0,0,0.35)]">
+      <div class="border-b border-[#e2d4bc] bg-[linear-gradient(180deg,_#fff9ef_0%,_#f4ead6_100%)] px-6 py-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p id="paymentStepLabel" class="text-xs font-extrabold uppercase tracking-[0.34em] text-[#b27b12]"></p>
+            <h2 id="paymentModalTitle" class="mt-2 text-3xl font-black text-[#5c130d]"></h2>
+            <p id="paymentModalSubtitle" class="mt-2 text-sm leading-6 text-[#7a5e49]"></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="backToMethodsButton" class="hidden rounded-full border border-[#d9c7a3] bg-white px-4 py-2 text-sm font-bold text-[#7a5e49] transition hover:bg-[#fff7e9]"></button>
+            <button id="closePaymentModalButton" class="rounded-full border border-[#d9c7a3] bg-white px-4 py-2 text-sm font-bold text-[#7a5e49] transition hover:bg-[#fff7e9]"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-6 px-6 py-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <section class="order-2 lg:order-1">
+          <div id="paymentMethodGrid" class="grid gap-4 sm:grid-cols-2">
+            <button data-method="card" class="brand-button overflow-hidden rounded-[1.65rem] border border-[#e5d8c0] bg-white p-5 text-left shadow-[0_12px_30px_rgba(92,19,13,0.08)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-[#9b6d0d]">CARD</p>
+              <p id="methodLabelCard" class="mt-3 text-3xl font-black text-[#4f1b10]"></p>
+              <p id="methodDescCard" class="mt-2 text-sm leading-6 text-[#7a5e49]"></p>
+            </button>
+            <button data-method="samsung" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#1658b3] p-5 text-left text-white shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">MOBILE PAY</p>
+              <p class="mt-3 text-3xl font-black">SAMSUNG pay</p>
+              <p id="methodDescSamsung" class="mt-2 text-sm leading-6 text-white/85"></p>
+            </button>
+            <button data-method="payco" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#ff2d2d] p-5 text-left text-white shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">BARCODE PAY</p>
+              <p class="mt-3 text-3xl font-black">PAYCO</p>
+              <p id="methodDescPayco" class="mt-2 text-sm leading-6 text-white/85"></p>
+            </button>
+            <button data-method="kakao" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#f8df00] p-5 text-left text-[#231f20] shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-[#544300]">QR PAY</p>
+              <p class="mt-3 text-3xl font-black">kakaopay</p>
+              <p id="methodDescKakao" class="mt-2 text-sm leading-6 text-[#413400]"></p>
+            </button>
+            <button data-method="zeropay" class="brand-button overflow-hidden rounded-[1.65rem] bg-[#2145a1] p-5 text-left text-white shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 sm:col-span-2">
+              <p class="text-xs font-extrabold uppercase tracking-[0.24em] text-white/70">LOCAL PAY</p>
+              <p class="mt-3 text-3xl font-black">zeropay</p>
+              <p id="methodDescZero" class="mt-2 text-sm leading-6 text-white/85"></p>
+            </button>
+          </div>
+
+          <div id="paymentDetailView" class="hidden rounded-[1.75rem] border border-[#d8c8ab] bg-white p-5 shadow-[0_12px_30px_rgba(92,19,13,0.08)]">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p id="paymentDetailEyebrow" class="text-xs font-extrabold uppercase tracking-[0.28em] text-[#b27b12]"></p>
+                <h3 id="paymentDetailTitle" class="mt-3 text-3xl font-black text-[#5c130d]"></h3>
+                <p id="paymentDetailDescription" class="mt-3 text-sm leading-6 text-[#7a5e49]"></p>
+              </div>
+              <span id="paymentBadge" class="rounded-full bg-[#fff0cb] px-3 py-1 text-xs font-extrabold text-[#8c5a00]"></span>
+            </div>
+
+            <div class="mt-5 rounded-[1.75rem] bg-[linear-gradient(180deg,_#2b2b2b_0%,_#171717_100%)] p-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <div class="flex items-center justify-between text-xs font-bold uppercase tracking-[0.2em] text-white/55">
+                <span id="terminalLabel">PAYMENT TERMINAL</span>
+                <span>SELF KIOSK</span>
+              </div>
+              <div id="paymentVisual" class="mt-5"></div>
+              <div class="mt-5 rounded-[1.3rem] bg-white/8 px-4 py-4">
+                <p id="instructionLabel" class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#ffc72c]"></p>
+                <p id="paymentInstructionText" class="mt-3 text-lg font-black leading-7 text-white"></p>
+              </div>
+            </div>
+
+            <button id="simulatePaymentButton" class="payment-glow mt-5 w-full rounded-[1.45rem] bg-[#da291c] px-6 py-4 text-lg font-black text-white transition hover:bg-[#bf1f14]"></button>
+          </div>
+        </section>
+
+        <aside class="order-1 rounded-[1.75rem] border border-[#e5d8c0] bg-[linear-gradient(180deg,_#5c130d_0%,_#3d0d08_100%)] p-5 text-white shadow-[0_14px_40px_rgba(92,19,13,0.18)] lg:order-2">
+          <p id="cartSummaryLabel" class="text-xs font-extrabold uppercase tracking-[0.24em] text-[#ffd469]"></p>
+          <div id="paymentCartSummary" class="mt-4 space-y-3"></div>
+          <div class="mt-5 rounded-[1.4rem] bg-white/10 px-4 py-4">
+            <div class="flex items-center justify-between text-sm text-white/70">
+              <span id="paymentTotalLabel"></span>
+              <span id="paymentTotalHint"></span>
+            </div>
+            <p id="paymentTotal" class="mt-2 text-3xl font-black text-[#ffc72c]">0?</p>
+          </div>
+          <div class="mt-5 rounded-[1.4rem] bg-white/8 px-4 py-4 text-sm leading-6 text-white/78">
+            <span id="paymentHelpText"></span>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const CATEGORY_META = {
+      all: { label: "??", description: "?? ??" },
+      coffee: { label: "??", description: "?????, ??" },
+      "non-coffee": { label: "???", description: "???, ???, ?" },
+      dessert: { label: "???", description: "???, ????" },
+    };
+
+    const paymentConfigs = {
+      card: {
+        label: "\uce74\ub4dc\uacb0\uc81c",
+        eyebrow: "CARD PAYMENT",
+        modalTitle: "\uce74\ub4dc \uacb0\uc81c",
+        modalSubtitle: "\uc2e4\uc81c \ud0a4\uc624\uc2a4\ud06c\ucc98\ub7fc \uce74\ub4dc \ud22c\uc785 \uc548\ub0b4 \ud654\uba74\uc744 \ud45c\uc2dc\ud569\ub2c8\ub2e4.",
+        terminal: "CARD READER",
+        description: "IC \uce74\ub4dc \ub610\ub294 \uccb4\ud06c\uce74\ub4dc\ub97c \ub2e8\ub9d0\uae30 \uce74\ub4dc \uc785\ub825\uad6c\uc5d0 \ub05d\uae4c\uc9c0 \ub123\uc5b4 \uc8fc\uc138\uc694.",
+        instruction: "\uce74\ub4dc\ub97c \ub123\uc5b4 \uc8fc\uc138\uc694. \uc2b9\uc778 \uc644\ub8cc \uc804\uae4c\uc9c0 \uce74\ub4dc\ub97c \ube7c\uc9c0 \ub9c8\uc138\uc694.",
+        visual: `<div class="rounded-[1.5rem] bg-black/25 p-5"><div class="rounded-[1.4rem] border border-[#ffc72c]/40 bg-[#101010] px-5 py-8"><div class="mx-auto max-w-md rounded-[1.2rem] border border-dashed border-[#ffc72c] px-5 py-6 text-center"><p class="text-sm font-bold text-white/85">IC CARD SLOT</p><div class="mx-auto mt-5 h-3 w-44 rounded-full bg-white/10"><div class="h-3 w-24 rounded-full bg-[#ffc72c]"></div></div><div class="mt-6 flex items-center justify-center gap-4"><div class="h-12 w-16 rounded-md bg-[linear-gradient(135deg,_#d9b86a_0%,_#8e6c1f_100%)]"></div><p class="text-sm leading-6 text-white/65">\uce74\ub4dc\uc758 IC\uce69\uc774 \uc704\ub97c \ud5a5\ud558\ub3c4\ub85d \ub123\uc5b4 \uc8fc\uc138\uc694.</p></div></div></div></div>`,
+      },
+      samsung: {
+        label: "SAMSUNG pay",
+        eyebrow: "MOBILE PAYMENT",
+        modalTitle: "SAMSUNG pay \uacb0\uc81c",
+        modalSubtitle: "\ud734\ub300\ud3f0\uc744 \ub2e8\ub9d0\uae30\uc5d0 \uac00\uae4c\uc774 \ub300\ub294 \uad6d\ub0b4 \ud0a4\uc624\uc2a4\ud06c \ud750\ub984\uc785\ub2c8\ub2e4.",
+        terminal: "NFC READY",
+        description: "\ud734\ub300\ud3f0\uc5d0\uc11c \uc0bc\uc131\ud398\uc774 \uacb0\uc81c \ud654\uba74\uc744 \ucf20 \ub4a4 \ub9ac\ub354 \uc601\uc5ed\uc5d0 \uac00\uae4c\uc774 \ub300\uc5b4 \uc8fc\uc138\uc694.",
+        instruction: "\ud734\ub300\ud3f0\uc744 \ub2e8\ub9d0\uae30\uc5d0 \uac00\uae4c\uc774 \ub300 \uc8fc\uc138\uc694.",
+        visual: `<div class="grid gap-5 lg:grid-cols-[1fr_0.9fr] lg:items-center"><div class="rounded-[1.5rem] bg-[#1658b3] px-5 py-6 text-white"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-white/65">WALLET</p><p class="mt-4 text-4xl font-black">SAMSUNG pay</p><p class="mt-4 text-sm leading-6 text-white/80">\uacb0\uc81c \ud654\uba74\uc744 \ucf20 \ud734\ub300\ud3f0\uc744 \ub2e8\ub9d0\uae30\uc5d0 \ub300 \uc8fc\uc138\uc694.</p></div><div class="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 text-center"><div class="mx-auto w-36 rounded-[1.7rem] bg-[#0f0f0f] p-4 shadow-2xl"><div class="rounded-[1.2rem] bg-[#203f8a] p-6 text-sm font-bold text-white">\ud734\ub300\ud3f0 \ud0dc\uadf8 \ub300\uae30</div></div></div></div>`,
+      },
+      payco: {
+        label: "PAYCO",
+        eyebrow: "BARCODE PAYMENT",
+        modalTitle: "PAYCO \uacb0\uc81c",
+        modalSubtitle: "\uc2a4\uce90\ub108 \ucc3d\uc5d0 \ubc14\ucf54\ub4dc\ub97c \ub9de\ucd94\ub294 \ubc29\uc2dd\uc73c\ub85c \uad6c\uc131\ud588\uc2b5\ub2c8\ub2e4.",
+        terminal: "SCAN BARCODE",
+        description: "PAYCO \uc571\uc758 \ubc14\ucf54\ub4dc\ub97c \uc5f4\uace0 \uc544\ub798 \uc2a4\uce90\ub108 \uc601\uc5ed\uc5d0 \ub9de\ucdb0 \uc8fc\uc138\uc694.",
+        instruction: "PAYCO \ubc14\ucf54\ub4dc\ub97c \uc2a4\uce90\ub108 \uc911\uc559\uc5d0 \ub9de\ucdb0 \uc8fc\uc138\uc694.",
+        visual: `<div class="rounded-[1.5rem] border border-white/10 bg-[#0f0f0f] p-5"><div class="relative overflow-hidden rounded-[1.25rem] bg-black px-4 py-6"><div class="scan-line absolute left-4 right-4 h-1 bg-[#ff4b4b]"></div><div class="mx-auto max-w-sm rounded-xl bg-white px-4 py-5 text-center text-[#111]"><p class="text-xs font-extrabold uppercase tracking-[0.22em] text-[#ff2d2d]">PAYCO BARCODE</p><div class="mt-5 h-24 bg-[repeating-linear-gradient(90deg,_#111_0,_#111_3px,_transparent_3px,_transparent_7px)]"></div><p class="mt-4 text-xs tracking-[0.34em] text-slate-500">9302 1148 2251</p></div></div></div>`,
+      },
+      kakao: {
+        label: "kakaopay",
+        eyebrow: "QR PAYMENT",
+        modalTitle: "kakaopay \uacb0\uc81c",
+        modalSubtitle: "\uad6d\ub0b4 \ub9e4\uc7a5\uc5d0\uc11c \ub9ce\uc774 \ubcf4\ub294 QR \ub610\ub294 \ubc14\ucf54\ub4dc \uacb0\uc81c \ud750\ub984\uc785\ub2c8\ub2e4.",
+        terminal: "QR SCAN READY",
+        description: "\uce74\uce74\uc624\ud398\uc774 QR \ub610\ub294 \ubc14\ucf54\ub4dc\ub97c \uc2a4\uce90\ub108 \uc601\uc5ed\uc5d0 \ubcf4\uc5ec \uc8fc\uc138\uc694.",
+        instruction: "\uce74\uce74\uc624\ud398\uc774 QR \ub610\ub294 \ubc14\ucf54\ub4dc\ub97c \uc2a4\uce94 \uc601\uc5ed\uc5d0 \ub9de\ucdb0 \uc8fc\uc138\uc694.",
+        visual: `<div class="grid gap-5 lg:grid-cols-[1fr_0.95fr] lg:items-center"><div class="rounded-[1.5rem] bg-[#f8df00] px-5 py-6 text-[#231f20]"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-[#544300]">QUICK PAY</p><p class="mt-4 text-4xl font-black">kakaopay</p><p class="mt-4 text-sm leading-6 text-[#413400]">\uc571\uc758 \uacb0\uc81c \ucf54\ub4dc\ub97c \uc5f4\uace0 \uc2a4\uce90\ub108\uc5d0 \ub9de\ucdb0 \uc8fc\uc138\uc694.</p></div><div class="rounded-[1.5rem] bg-white p-5 text-center text-black"><div class="mx-auto h-40 w-40 bg-[linear-gradient(45deg,_#000_25%,_transparent_25%,_transparent_50%,_#000_50%,_#000_75%,_transparent_75%,_transparent)] bg-[length:18px_18px]"></div><p class="mt-4 text-sm font-bold">QR CODE</p></div></div>`,
+      },
+      zeropay: {
+        label: "zeropay",
+        eyebrow: "ZERO PAYMENT",
+        modalTitle: "zeropay \uacb0\uc81c",
+        modalSubtitle: "\uac00\ub9f9\uc810 QR \ub610\ub294 \uace0\uac1d \ucf54\ub4dc \uc2a4\uce94 \ud750\ub984\uc73c\ub85c \uad6c\uc131\ud588\uc2b5\ub2c8\ub2e4.",
+        terminal: "ZERO PAY",
+        description: "\uc81c\ub85c\ud398\uc774 \uc571\uc73c\ub85c \uac00\ub9f9\uc810 QR\uc744 \uc2a4\uce94\ud558\uac70\ub098 \uace0\uac1d \uacb0\uc81c \ucf54\ub4dc\ub97c \ubcf4\uc5ec \uc8fc\uc138\uc694.",
+        instruction: "\uc81c\ub85c\ud398\uc774 QR \ub610\ub294 \ubc14\ucf54\ub4dc\ub97c \uc2a4\uce94 \uc601\uc5ed\uc5d0 \ub9de\ucdb0 \uc8fc\uc138\uc694.",
+        visual: `<div class="grid gap-5 lg:grid-cols-[1fr_0.95fr] lg:items-center"><div class="rounded-[1.5rem] bg-[#2145a1] px-5 py-6 text-white"><p class="text-xs font-extrabold uppercase tracking-[0.2em] text-white/65">LOCAL PAY</p><p class="mt-4 text-4xl font-black">zeropay</p><p class="mt-4 text-sm leading-6 text-white/80">\uac00\ub9f9\uc810 QR \ub610\ub294 \uacb0\uc81c \ucf54\ub4dc\ub97c \uc2a4\uce90\ud574 \uc8fc\uc138\uc694.</p></div><div class="rounded-[1.5rem] bg-white p-5 text-center text-[#2145a1]"><div class="mx-auto h-40 w-40 bg-[linear-gradient(45deg,_#2145a1_25%,_transparent_25%,_transparent_50%,_#2145a1_50%,_#2145a1_75%,_transparent_75%,_transparent)] bg-[length:18px_18px]"></div><p class="mt-4 text-sm font-bold">SCAN ME</p></div></div>`,
+      },
+    };
+
+    const paymentLocale = {
+      stepSelect: "\uacb0\uc81c \uc120\ud0dd",
+      stepProgress: "\uacb0\uc81c \uc9c4\ud589",
+      defaultTitle: "\uacb0\uc81c \uc218\ub2e8\uc744 \uc120\ud0dd\ud574 \uc8fc\uc138\uc694",
+      defaultSubtitle: "\uad6d\ub0b4 \ud0a4\uc624\uc2a4\ud06c\uc5d0\uc11c \uc790\uc8fc \ubcf4\ub294 \ubc29\uc2dd\ucc98\ub7fc \uce74\ub4dc, \uc0bc\uc131\ud398\uc774, PAYCO, \uce74\uce74\uc624\ud398\uc774, \uc81c\ub85c\ud398\uc774 \uc911 \ud558\ub098\ub97c \uc120\ud0dd\ud574 \uc8fc\uc138\uc694.",
+      back: "\uc774\uc804",
+      close: "\ub2eb\uae30",
+      methodCardLabel: "\uce74\ub4dc\uacb0\uc81c",
+      methodCardDesc: "\uce74\ub4dc \ud22c\uc785\uae30 \uc548\ub0b4 \ud654\uba74\uc73c\ub85c \uc774\ub3d9",
+      methodSamsungDesc: "\ud734\ub300\ud3f0\uc744 \ub2e8\ub9d0\uae30\uc5d0 \uac00\uae4c\uc774 \ub300\ub294 \uacb0\uc81c",
+      methodPaycoDesc: "\ubc14\ucf54\ub4dc\ub97c \uc2a4\uce90\ub108\uc5d0 \ubcf4\uc5ec\uc8fc\ub294 \uacb0\uc81c",
+      methodKakaoDesc: "QR \ub610\ub294 \ubc14\ucf54\ub4dc \uc2a4\uce94 \uacb0\uc81c",
+      methodZeroDesc: "\uac00\ub9f9\uc810 QR \ub610\ub294 \uace0\uac1d \ubc14\ucf54\ub4dc \uacb0\uc81c",
+      badge: "\uacb0\uc81c \uc9c4\ud589",
+      instructionLabel: "\uc548\ub0b4 \ubb38\uad6c",
+      completeDemo: "\ud14c\uc2a4\ud2b8 \uacb0\uc81c \uc644\ub8cc",
+      cartSummaryLabel: "\uc8fc\ubb38 \ud655\uc778",
+      totalLabel: "\ucd1d \uacb0\uc81c \uae08\uc561",
+      totalHint: "\uc989\uc2dc \uacb0\uc81c \uc804",
+      helpText: "\uc774\uc804 \ub610\ub294 \ub2eb\uae30\ub97c \ub20c\ub7ec\ub3c4 \uc7a5\ubc14\uad6c\ub2c8\ub294 \uc720\uc9c0\ub429\ub2c8\ub2e4. \uc2e4\uc81c \uc2b9\uc778 \ub300\uc2e0 \uacb0\uc81c \uc9c1\uc804 UX\ub9cc \uc2dc\ubbac\ub808\uc774\uc158\ud569\ub2c8\ub2e4.",
+      emptyCart: "\uc7a5\ubc14\uad6c\ub2c8\uac00 \ube44\uc5b4 \uc788\uc2b5\ub2c8\ub2e4.",
+      saving: "\uc8fc\ubb38 \uc800\uc7a5 \uc911...",
+      savingMessageSuffix: " \ud14c\uc2a4\ud2b8 \uacb0\uc81c\ub97c \ub9c8\ubb34\ub9ac\ud558\ub294 \uc911\uc785\ub2c8\ub2e4...",
+      paymentDoneSuffix: " \uacb0\uc81c UX\ub97c \uc2dc\ubbac\ub808\uc774\uc158\ud588\uc2b5\ub2c8\ub2e4.",
+    };
+
     const state = {
       menus: [],
-      filteredMenus: [],
       cart: [],
       transcript: "",
+      lastVoiceOrder: null,
       recognition: null,
       listening: false,
-      search: "",
+      browseResult: null,
+      activeCategory: "all",
+      searchQuery: "",
+      paymentMethod: null,
+      paymentProcessing: false,
     };
 
     const menuGrid = document.getElementById("menuGrid");
@@ -226,188 +580,348 @@
     const liveTranscript = document.getElementById("liveTranscript");
     const transcriptPreview = document.getElementById("transcriptPreview");
     const voiceMessage = document.getElementById("voiceMessage");
+    const undoLastVoiceButton = document.getElementById("undoLastVoiceButton");
     const confirmMessage = document.getElementById("confirmMessage");
     const speechStatus = document.getElementById("speechStatus");
     const supportBadge = document.getElementById("supportBadge");
-    const searchInput = document.getElementById("searchInput");
-    const orderCountBadge = document.getElementById("orderCountBadge");
-    const receiptNumber = document.getElementById("receiptNumber");
-    const coffeeCategoryCount = document.getElementById("coffeeCategoryCount");
-    const teaCategoryCount = document.getElementById("teaCategoryCount");
-    const snackCategoryCount = document.getElementById("snackCategoryCount");
+    const categoryTabs = document.getElementById("categoryTabs");
+    const resultSummary = document.getElementById("resultSummary");
+    const menuSearchInput = document.getElementById("menuSearchInput");
+    const browseRecommendationPanel = document.getElementById("browseRecommendationPanel");
+    const browseRecommendationTitle = document.getElementById("browseRecommendationTitle");
+    const browseRecommendationMessage = document.getElementById("browseRecommendationMessage");
+    const paymentModal = document.getElementById("paymentModal");
+    const paymentMethodGrid = document.getElementById("paymentMethodGrid");
+    const paymentCartSummary = document.getElementById("paymentCartSummary");
+    const paymentTotal = document.getElementById("paymentTotal");
+    const paymentStepLabel = document.getElementById("paymentStepLabel");
+    const paymentModalTitle = document.getElementById("paymentModalTitle");
+    const paymentModalSubtitle = document.getElementById("paymentModalSubtitle");
+    const paymentDetailView = document.getElementById("paymentDetailView");
+    const paymentDetailEyebrow = document.getElementById("paymentDetailEyebrow");
+    const paymentDetailTitle = document.getElementById("paymentDetailTitle");
+    const paymentDetailDescription = document.getElementById("paymentDetailDescription");
+    const terminalLabel = document.getElementById("terminalLabel");
+    const paymentVisual = document.getElementById("paymentVisual");
+    const paymentInstructionText = document.getElementById("paymentInstructionText");
+    const backToMethodsButton = document.getElementById("backToMethodsButton");
+    const simulatePaymentButton = document.getElementById("simulatePaymentButton");
     let permissionStream = null;
+    function applyPaymentLocale() {
+      paymentStepLabel.textContent = paymentLocale.stepSelect;
+      paymentModalTitle.textContent = paymentLocale.defaultTitle;
+      paymentModalSubtitle.textContent = paymentLocale.defaultSubtitle;
+      backToMethodsButton.textContent = paymentLocale.back;
+      document.getElementById("closePaymentModalButton").textContent = paymentLocale.close;
+      document.getElementById("methodLabelCard").textContent = paymentLocale.methodCardLabel;
+      document.getElementById("methodDescCard").textContent = paymentLocale.methodCardDesc;
+      document.getElementById("methodDescSamsung").textContent = paymentLocale.methodSamsungDesc;
+      document.getElementById("methodDescPayco").textContent = paymentLocale.methodPaycoDesc;
+      document.getElementById("methodDescKakao").textContent = paymentLocale.methodKakaoDesc;
+      document.getElementById("methodDescZero").textContent = paymentLocale.methodZeroDesc;
+      document.getElementById("paymentBadge").textContent = paymentLocale.badge;
+      document.getElementById("instructionLabel").textContent = paymentLocale.instructionLabel;
+      simulatePaymentButton.textContent = paymentLocale.completeDemo;
+      document.getElementById("cartSummaryLabel").textContent = paymentLocale.cartSummaryLabel;
+      document.getElementById("paymentTotalLabel").textContent = paymentLocale.totalLabel;
+      document.getElementById("paymentTotalHint").textContent = paymentLocale.totalHint;
+      document.getElementById("paymentHelpText").textContent = paymentLocale.helpText;
+    }
+
 
     function formatPrice(value) {
       return new Intl.NumberFormat("ko-KR").format(value) + "원";
     }
 
-    function setTodayLabel() {
-      const formatter = new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      });
-      document.getElementById("todayLabel").textContent = formatter.format(new Date());
+    function normalizeText(text) {
+      return (text || "").toLowerCase().replace(/\s+/g, "");
     }
 
     function setStatus(message) {
       speechStatus.textContent = message;
     }
 
-    function getMenuType(menu) {
-      const name = (menu.name || "").toLowerCase();
-      if (name.includes("tea")) {
-        return "tea";
-      }
-      if (name.includes("cake") || name.includes("muffin") || name.includes("snack") || name.includes("케이크") || name.includes("머핀")) {
-        return "snack";
-      }
-      if (name.includes("smoothie") || name.includes("스무디")) {
-        return "tea";
-      }
-      return "coffee";
+    function categoryCounts() {
+      return state.menus.reduce((counts, menu) => {
+        counts[menu.category] = (counts[menu.category] || 0) + 1;
+        return counts;
+      }, { coffee: 0, "non-coffee": 0, dessert: 0 });
     }
 
-    function getMenuBadge(type) {
-      if (type === "tea") {
-        return {
-          label: "Best Seller",
-          className: "bg-[#dbe7dd] text-[#2f5d39]",
-        };
+    function currentBrowseMenuIds() {
+      if (!state.browseResult || !Array.isArray(state.browseResult.menus)) {
+        return null;
       }
-      if (type === "snack") {
-        return {
-          label: "Fresh",
-          className: "bg-[#ffe3c9] text-[#9b5520]",
-        };
-      }
-      return {
-        label: "Popular",
-        className: "bg-[#d9efe1] text-[#046a2d]",
-      };
+      return new Set(state.browseResult.menus.map((menu) => menu.id));
     }
 
-    function updateCategoryCounts() {
-      const counts = state.menus.reduce((accumulator, menu) => {
-        const type = getMenuType(menu);
-        accumulator[type] += 1;
-        return accumulator;
-      }, { coffee: 0, tea: 0, snack: 0 });
-
-      coffeeCategoryCount.textContent = `${counts.coffee} items`;
-      teaCategoryCount.textContent = `${counts.tea} items`;
-      snackCategoryCount.textContent = `${counts.snack} items`;
-    }
-
-    function applyMenuFilter() {
-      const keyword = state.search.trim().toLowerCase();
-      state.filteredMenus = state.menus.filter((menu) => {
-        if (!keyword) {
-          return true;
+    function filteredMenus() {
+      const query = normalizeText(state.searchQuery);
+      const browseMenuIds = currentBrowseMenuIds();
+      return state.menus.filter((menu) => {
+        if (browseMenuIds && !browseMenuIds.has(menu.id)) {
+          return false;
         }
-        return menu.name.toLowerCase().includes(keyword);
+        const categoryMatch = state.activeCategory === "all" || menu.category === state.activeCategory;
+        const searchMatch = !query || normalizeText(menu.name).includes(query);
+        return categoryMatch && searchMatch;
       });
-      renderMenus();
     }
 
-    function renderMenus() {
-      if (!state.filteredMenus.length) {
-        menuGrid.innerHTML = '<div class="sm:col-span-2 xl:col-span-4 rounded-[2rem] border border-dashed border-[#b8ccb9] bg-white/80 px-6 py-10 text-center text-[#56705c]">조건에 맞는 메뉴가 없습니다.</div>';
+    function renderBrowseRecommendations() {
+      const browse = state.browseResult;
+      if (!browse) {
+        browseRecommendationPanel.classList.add("hidden");
         return;
       }
 
-      menuGrid.innerHTML = state.filteredMenus.map((menu) => {
-        const type = getMenuType(menu);
-        const badge = getMenuBadge(type);
-        const quantityInCart = state.cart.find((item) => item.menu_id === menu.id)?.quantity || 0;
+      browseRecommendationPanel.classList.remove("hidden");
+      browseRecommendationTitle.textContent = browse.title || "조건에 맞는 메뉴로 필터링했어요.";
+      browseRecommendationMessage.textContent = browse.message || "조건에 맞는 메뉴를 아래 메뉴판에서 보여주고 있습니다.";
+    }
 
+    function clearBrowseResult(options = {}) {
+      state.browseResult = null;
+      renderBrowseRecommendations();
+      if (options.resetCategory) {
+        state.activeCategory = "all";
+      }
+      renderMenus();
+    }
+
+    function applyBrowseResult(browseResult) {
+      state.browseResult = browseResult;
+      if (browseResult && browseResult.scroll_target && CATEGORY_META[browseResult.scroll_target]) {
+        state.activeCategory = browseResult.scroll_target;
+      }
+      renderBrowseRecommendations();
+      renderMenus();
+      if (browseResult) {
+        browseRecommendationPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+
+    function renderCategoryCards() {
+      const counts = categoryCounts();
+      document.getElementById("coffeeCountLabel").textContent = `${counts.coffee} items`;
+      document.getElementById("nonCoffeeCountLabel").textContent = `${counts["non-coffee"]} items`;
+      document.getElementById("dessertCountLabel").textContent = `${counts.dessert} items`;
+    }
+
+    function renderTabs() {
+      const counts = categoryCounts();
+      const tabKeys = ["all", "coffee", "non-coffee", "dessert"];
+      categoryTabs.innerHTML = tabKeys.map((key) => {
+        const count = key === "all" ? state.menus.length : counts[key];
+        const meta = CATEGORY_META[key];
+        const activeClass = state.activeCategory === key ? "active" : "";
         return `
-          <article class="group flex min-h-[238px] flex-col justify-between rounded-[2rem] border border-[#6fa17d] bg-[#fcfcf8] p-4 shadow-[0_12px_28px_rgba(34,59,42,0.08)] transition hover:-translate-y-1 hover:shadow-[0_20px_36px_rgba(34,59,42,0.14)]">
-            <div class="flex items-start justify-between gap-3">
-              <div class="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.5rem] bg-[#f2eee3]">
-                <img src="${menu.image_url}" alt="${menu.name}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
-              </div>
-              ${quantityInCart ? `<span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#dbe7dd] text-xs font-semibold text-[#2e5f39]">${quantityInCart}</span>` : `<span class="inline-flex rounded-full px-3 py-1 text-xs font-medium ${badge.className}">${badge.label}</span>`}
-            </div>
-            <div class="mt-3">
-              <h3 class="text-[1.05rem] font-semibold text-[#17231b]">${menu.name}</h3>
-              <p class="mt-1 text-xl font-medium text-[#4d5f55]">${formatPrice(menu.price)}</p>
-              <p class="mt-1 text-sm text-[#7b857d]">${type === "snack" ? "Bakery selection" : type === "tea" ? "Handcrafted cold drinks" : "Fresh roasted coffee"}</p>
-            </div>
-            <div class="mt-4 flex items-center justify-end">
-              <button
-                class="flex h-14 w-14 items-center justify-center rounded-full border border-[#4f9969] text-[#173923] transition hover:bg-[#046a2d] hover:text-white"
-                onclick="addMenuToCart(${menu.id})"
-                aria-label="${menu.name} 추가"
-              >
-                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M12 5v14"></path>
-                  <path d="M5 12h14"></path>
-                </svg>
-              </button>
-            </div>
-          </article>
+          <button
+            class="tab-button ${activeClass} rounded-full px-5 py-3 text-[14px] font-semibold"
+            onclick="setActiveCategory('${key}')"
+            aria-pressed="${state.activeCategory === key}"
+          >
+            ${meta.label} (${count})
+          </button>
         `;
       }).join("");
     }
 
+    function renderResultSummary(items) {
+      if (state.browseResult) {
+        resultSummary.textContent = items.length
+          ? `필터링 결과 ${items.length}개를 보여주고 있습니다.`
+          : "조건에 맞는 메뉴가 없습니다.";
+        return;
+      }
+
+      const categoryLabel = CATEGORY_META[state.activeCategory].label;
+      if (!items.length) {
+        resultSummary.textContent = state.searchQuery
+          ? `"${state.searchQuery}" 검색 결과가 없습니다.`
+          : `${categoryLabel} 탭에 표시할 메뉴가 없습니다.`;
+        return;
+      }
+
+      if (state.searchQuery) {
+        resultSummary.textContent = `${categoryLabel} 탭에서 "${state.searchQuery}" 검색 결과 ${items.length}개`;
+      } else if (state.activeCategory === "all") {
+        resultSummary.textContent = `전체 메뉴 ${items.length}개를 보여주고 있습니다.`;
+      } else {
+        resultSummary.textContent = `${categoryLabel} 탭 메뉴 ${items.length}개를 보여주고 있습니다.`;
+      }
+    }
+
+    function renderMenus() {
+      const items = filteredMenus();
+      renderTabs();
+      renderCategoryCards();
+      renderResultSummary(items);
+
+      if (!items.length) {
+        menuGrid.innerHTML = '<div class="rounded-[28px] border border-dashed border-[#b5c8ba] bg-white px-6 py-12 text-center text-[#60756a]">조건에 맞는 메뉴가 없습니다. 탭을 바꾸거나 검색어를 확인해 주세요.</div>';
+        return;
+      }
+
+      menuGrid.innerHTML = items.map((menu, index) => `
+        <article class="product-card group overflow-hidden p-4 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_54px_rgba(18,59,46,0.12)]">
+          <div class="flex h-full flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#dfeae2] text-[12px] font-bold text-[#3b7a5d]">${index + 1}</div>
+                <div class="text-[12px] font-semibold text-[#9aa49e]">${CATEGORY_META[menu.category]?.label || "메뉴"}</div>
+              </div>
+              <div class="product-image-shell mt-3 overflow-hidden">
+                <img src="${menu.image_url}" alt="${menu.name}" class="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105">
+              </div>
+            </div>
+            <div class="mt-4">
+              <h3 class="text-[20px] font-black tracking-[-0.04em] text-[#1e2a24]">${menu.name}</h3>
+              <p class="mt-1 text-[16px] font-medium text-[#6d776f]">${formatPrice(menu.price)}</p>
+              <div class="mt-4 flex items-end justify-between gap-3">
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-[#93a098]">Quick order</p>
+                  <p class="mt-1 text-[13px] text-[#6c746d]">바로 담기</p>
+                </div>
+                <button
+                  class="flex h-[56px] w-[56px] items-center justify-center rounded-full border border-[#2f7557] bg-[#0f6a33] text-[32px] font-light leading-none text-white transition hover:bg-[#0b5a2b]"
+                  onclick="addMenuToCart(${menu.id})"
+                  aria-label="${menu.name} 추가"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `).join("");
+    }
+
     function renderCart() {
       if (!state.cart.length) {
-        cartItems.innerHTML = '<div class="rounded-[1.5rem] border border-dashed border-[#b8ccb9] bg-[#fafaf6] px-4 py-8 text-center text-[#6a7a6d]">장바구니가 비어 있습니다.</div>';
+        cartItems.innerHTML = '<div class="rounded-[24px] border border-dashed border-[#b5c8ba] bg-white px-4 py-10 text-center text-[#60756a]">장바구니가 비어 있습니다.</div>';
       } else {
         cartItems.innerHTML = state.cart.map((item) => `
-          <article class="flex items-center gap-3 rounded-[1.4rem] bg-[#fbfbf7] p-3 shadow-[inset_0_0_0_1px_rgba(41,78,53,0.08)]">
-            <div class="h-20 w-20 overflow-hidden rounded-[1.2rem] bg-[#f1eee4]">
-              <img src="${item.image_url || ""}" alt="${item.name}" class="h-full w-full object-cover">
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="truncate text-lg font-semibold text-[#152118]">${item.name}</p>
-                  <p class="mt-1 text-sm text-[#7b827b]">${formatPrice(item.price)} x ${item.quantity}</p>
-                </div>
-                <p class="whitespace-nowrap text-base font-semibold text-[#1d3225]">${formatPrice(item.subtotal)}</p>
+          <div class="order-item rounded-[22px] px-4 py-4">
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[22px] font-black tracking-[-0.04em] text-[#1e2a24]">${item.name}</p>
+                <p class="mt-1 text-[14px] text-[#6e7871]">${formatPrice(item.price)} x ${item.quantity}</p>
               </div>
-              <div class="mt-3 flex items-center justify-between">
-                <p class="text-xs text-[#7b827b]">${item.quantity > 1 ? "Regular · Group order" : "Regular"}</p>
-                <div class="flex items-center gap-2">
-                  <button class="flex h-9 w-9 items-center justify-center rounded-full border border-[#90b098] text-[#23412e] transition hover:bg-[#edf4ec]" onclick="changeQuantity(${item.menu_id}, -1)">-</button>
-                  <button class="flex h-9 w-9 items-center justify-center rounded-full border border-[#90b098] text-[#23412e] transition hover:bg-[#edf4ec]" onclick="changeQuantity(${item.menu_id}, 1)">+</button>
+              <div class="text-right">
+                <p class="text-[16px] font-black text-[#1f6a4d]">${formatPrice(item.subtotal)}</p>
+                <div class="mt-3 flex items-center justify-end gap-2">
+                  <button class="rounded-full bg-[#f5e7e2] px-3 py-2 text-[12px] font-semibold text-[#9a4023]" onclick="removeCartItem(${item.menu_id})">전체 취소</button>
+                  <button class="flex h-9 w-9 items-center justify-center rounded-full bg-[#edf3ee] text-[18px] font-bold text-[#1f6a4d]" onclick="changeQuantity(${item.menu_id}, -1)">-</button>
+                  <button class="flex h-9 w-9 items-center justify-center rounded-full bg-[#1f6a4d] text-[18px] font-bold text-white" onclick="changeQuantity(${item.menu_id}, 1)">+</button>
                 </div>
               </div>
             </div>
-          </article>
+          </div>
         `).join("");
       }
 
       const total = state.cart.reduce((sum, item) => sum + item.subtotal, 0);
       const count = state.cart.reduce((sum, item) => sum + item.quantity, 0);
       totalPrice.textContent = formatPrice(total);
-      heroTotal.textContent = `Voice cart total ${formatPrice(total)}`;
+      heroTotal.textContent = formatPrice(total);
       cartCount.textContent = `${count}개 상품`;
-      orderCountBadge.textContent = `${count} Orders`;
       confirmButton.disabled = state.cart.length === 0;
-      receiptNumber.textContent = `#${String(27000 + count).padStart(5, "0")}`;
-      renderMenus();
+      renderPaymentCartSummary();
+      renderVoiceUndoState();
+    }
+
+    function renderPaymentCartSummary() {
+      if (!state.cart.length) {
+        paymentCartSummary.innerHTML = `<div class="rounded-[1.25rem] bg-white/8 px-4 py-4 text-sm text-white/70">${paymentLocale.emptyCart}</div>`;
+        paymentTotal.textContent = formatPrice(0);
+        return;
+      }
+
+      paymentCartSummary.innerHTML = state.cart.map((item) => `
+        <div class="rounded-[1.25rem] bg-white/8 px-4 py-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-black text-white">${item.name}</p>
+              <p class="mt-1 text-xs text-white/60">${item.quantity}?</p>
+            </div>
+            <strong class="text-base font-black text-[#ffc72c]">${formatPrice(item.subtotal)}</strong>
+          </div>
+        </div>
+      `).join("");
+      paymentTotal.textContent = formatPrice(state.cart.reduce((sum, item) => sum + item.subtotal, 0));
+    }
+
+    function renderVoiceUndoState() {
+      if (!state.lastVoiceOrder || !Array.isArray(state.lastVoiceOrder.items) || !state.lastVoiceOrder.items.length) {
+        undoLastVoiceButton.classList.add("hidden");
+        return;
+      }
+      undoLastVoiceButton.classList.remove("hidden");
+    }
+
+    function resetPaymentModalView() {
+      state.paymentMethod = null;
+      paymentMethodGrid.classList.remove("hidden");
+      paymentDetailView.classList.add("hidden");
+      backToMethodsButton.classList.add("hidden");
+      paymentStepLabel.textContent = paymentLocale.stepSelect;
+      paymentModalTitle.textContent = paymentLocale.defaultTitle;
+      paymentModalSubtitle.textContent = paymentLocale.defaultSubtitle;
+      simulatePaymentButton.disabled = false;
+      simulatePaymentButton.textContent = paymentLocale.completeDemo;
+    }
+
+    function openPaymentModal() {
+      if (!state.cart.length) return;
+      paymentModal.classList.remove("hidden");
+      paymentModal.classList.add("flex");
+      document.body.classList.add("overflow-hidden");
+      resetPaymentModalView();
+      renderPaymentCartSummary();
+    }
+
+    function closePaymentModal() {
+      if (state.paymentProcessing) return;
+      paymentModal.classList.add("hidden");
+      paymentModal.classList.remove("flex");
+      document.body.classList.remove("overflow-hidden");
+      resetPaymentModalView();
+    }
+
+    function showPaymentMethods() {
+      resetPaymentModalView();
+      renderPaymentCartSummary();
+    }
+
+    function selectPaymentMethod(method) {
+      const config = paymentConfigs[method];
+      if (!config) return;
+      state.paymentMethod = method;
+      paymentMethodGrid.classList.add("hidden");
+      paymentDetailView.classList.remove("hidden");
+      backToMethodsButton.classList.remove("hidden");
+      paymentStepLabel.textContent = paymentLocale.stepProgress;
+      paymentModalTitle.textContent = config.modalTitle;
+      paymentModalSubtitle.textContent = config.modalSubtitle;
+      paymentDetailEyebrow.textContent = config.eyebrow;
+      paymentDetailTitle.textContent = config.label;
+      paymentDetailDescription.textContent = config.description;
+      terminalLabel.textContent = config.terminal;
+      paymentInstructionText.textContent = config.instruction;
+      paymentVisual.innerHTML = config.visual;
     }
 
     function mergeCartItems(items) {
       const merged = new Map(state.cart.map((item) => [item.menu_id, { ...item }]));
 
       items.forEach((item) => {
-        const menu = state.menus.find((candidate) => candidate.id === item.menu_id);
-        const enrichedItem = {
-          ...item,
-          image_url: item.image_url || (menu ? menu.image_url : ""),
-        };
-
         if (merged.has(item.menu_id)) {
           const current = merged.get(item.menu_id);
           current.quantity += item.quantity;
           current.subtotal = current.price * current.quantity;
-          current.image_url = enrichedItem.image_url;
         } else {
-          merged.set(item.menu_id, enrichedItem);
+          merged.set(item.menu_id, { ...item });
         }
       });
 
@@ -418,15 +932,7 @@
     function addMenuToCart(menuId) {
       const menu = state.menus.find((item) => item.id === menuId);
       if (!menu) return;
-
-      mergeCartItems([{
-        menu_id: menu.id,
-        name: menu.name,
-        price: menu.price,
-        quantity: 1,
-        subtotal: menu.price,
-        image_url: menu.image_url,
-      }]);
+      mergeCartItems([{ menu_id: menu.id, name: menu.name, price: menu.price, quantity: 1, subtotal: menu.price, category: menu.category }]);
       confirmMessage.textContent = `${menu.name} 1개를 장바구니에 추가했습니다.`;
     }
 
@@ -435,12 +941,75 @@
         .map((item) => {
           if (item.menu_id !== menuId) return item;
           const quantity = item.quantity + delta;
-          return { ...item, quantity, subtotal: item.price * quantity };
+          return {
+            ...item,
+            quantity,
+            subtotal: item.price * quantity,
+          };
         })
         .filter((item) => item.quantity > 0);
       renderCart();
     }
 
+    function removeCartItem(menuId) {
+      state.cart = state.cart.filter((item) => item.menu_id !== menuId);
+      renderCart();
+    }
+
+    function removeCartQuantity(menuId, quantityToRemove) {
+      let removed = 0;
+      state.cart = state.cart
+        .map((item) => {
+          if (item.menu_id !== menuId) return item;
+          const removable = Math.min(quantityToRemove, item.quantity);
+          removed = removable;
+          const nextQuantity = item.quantity - removable;
+          if (nextQuantity <= 0) {
+            return null;
+          }
+          return {
+            ...item,
+            quantity: nextQuantity,
+            subtotal: item.price * nextQuantity,
+          };
+        })
+        .filter(Boolean);
+      renderCart();
+      return removed;
+    }
+
+    function cancelCartItems(items) {
+      let removedTotal = 0;
+      items.forEach((item) => {
+        removedTotal += removeCartQuantity(item.menu_id, item.quantity || 0);
+      });
+      return removedTotal;
+    }
+
+    function undoLastVoiceOrder() {
+      if (!state.lastVoiceOrder || !Array.isArray(state.lastVoiceOrder.items) || !state.lastVoiceOrder.items.length) {
+        voiceMessage.textContent = "되돌릴 최근 담기 내역이 없습니다.";
+        return;
+      }
+
+      state.lastVoiceOrder.items.forEach((item) => {
+        removeCartQuantity(item.menu_id, item.quantity);
+      });
+
+      voiceMessage.textContent = "방금 담은 항목을 되돌렸습니다.";
+      confirmMessage.textContent = "방금 담은 항목을 장바구니에서 되돌렸습니다.";
+      state.lastVoiceOrder = null;
+      renderVoiceUndoState();
+    }
+
+    function setActiveCategory(category) {
+      if (state.browseResult) {
+        state.browseResult = null;
+        renderBrowseRecommendations();
+      }
+      state.activeCategory = category;
+      renderMenus();
+    }
     async function ensureMicrophonePermission() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("이 브라우저는 마이크 권한 요청 API를 지원하지 않습니다.");
@@ -489,12 +1058,12 @@
     }
 
     async function loadMenus() {
-      menuGrid.innerHTML = '<div class="sm:col-span-2 xl:col-span-4 rounded-[2rem] border border-dashed border-[#b8ccb9] bg-white/80 px-6 py-10 text-center text-[#56705c]">메뉴를 불러오는 중...</div>';
+      menuGrid.innerHTML = '<div class="rounded-[28px] border border-dashed border-[#b5c8ba] bg-white px-6 py-12 text-center text-[#60756a]">메뉴를 불러오는 중...</div>';
       const response = await fetch("/api/menus");
       const data = await response.json();
       state.menus = data.menus || [];
-      updateCategoryCounts();
-      applyMenuFilter();
+      renderBrowseRecommendations();
+      renderMenus();
     }
 
     async function sendTranscriptToServer(text) {
@@ -510,16 +1079,50 @@
       }
 
       voiceMessage.textContent = data.message || "주문 분석 완료";
-      if (Array.isArray(data.items) && data.items.length) {
-        mergeCartItems(data.items);
+      let handledMutation = false;
+
+      if (Array.isArray(data.cancel_items) && data.cancel_items.length) {
+        const removedTotal = cancelCartItems(data.cancel_items);
+        if (removedTotal > 0) {
+          state.lastVoiceOrder = null;
+          renderVoiceUndoState();
+          confirmMessage.textContent = "장바구니에서 요청한 항목을 취소했습니다.";
+          voiceMessage.textContent = data.message || "취소할 주문 후보를 확인했습니다.";
+        } else {
+          voiceMessage.textContent = "장바구니에서 취소할 메뉴를 찾지 못했습니다.";
+        }
+        handledMutation = true;
       }
+
+      if (Array.isArray(data.items) && data.items.length) {
+        state.lastVoiceOrder = {
+          transcript: text,
+          items: data.items.map((item) => ({ ...item })),
+        };
+        mergeCartItems(data.items);
+        if (data.browse_result) {
+          applyBrowseResult(data.browse_result);
+        } else {
+          clearBrowseResult();
+        }
+        return;
+      }
+
+      if (handledMutation) {
+        clearBrowseResult();
+        return;
+      }
+
+      applyBrowseResult(data.browse_result || null);
     }
 
-    async function confirmOrder() {
-      if (!state.cart.length) return;
+    async function submitOrder() {
+      if (!state.cart.length || !state.paymentMethod) return;
 
-      confirmButton.disabled = true;
-      confirmMessage.textContent = "주문을 저장하는 중입니다...";
+      state.paymentProcessing = true;
+      simulatePaymentButton.disabled = true;
+      simulatePaymentButton.textContent = "주문 저장 중...";
+      confirmMessage.textContent = `${paymentConfigs[state.paymentMethod].label} 테스트 결제를 마무리하는 중입니다...`;
 
       try {
         const response = await fetch("/api/order/confirm", {
@@ -528,6 +1131,7 @@
           body: JSON.stringify({
             items: state.cart.map((item) => ({ menu_id: item.menu_id, quantity: item.quantity })),
             source_text: state.transcript,
+            payment_method: state.paymentMethod,
           }),
         });
 
@@ -536,12 +1140,16 @@
           throw new Error(data.error || "주문 저장에 실패했습니다.");
         }
 
-        confirmMessage.textContent = `주문 #${data.order_id} 저장 완료, 총 ${formatPrice(data.total_price)} 결제 처리되었습니다.`;
+        confirmMessage.textContent = `주문 #${data.order_id} 저장 완료, ${paymentConfigs[state.paymentMethod].label} 결제 UX를 시뮬레이션했습니다.`;
         state.cart = [];
         renderCart();
+        closePaymentModal();
       } catch (error) {
         confirmMessage.textContent = error.message;
+        simulatePaymentButton.disabled = false;
+        simulatePaymentButton.textContent = "테스트 결제 완료";
       } finally {
+        state.paymentProcessing = false;
         confirmButton.disabled = state.cart.length === 0;
       }
     }
@@ -565,6 +1173,7 @@
       recognition.onstart = () => {
         state.listening = true;
         setStatus("듣는 중");
+        voiceButton.textContent = "음성 인식 중...";
         voiceButton.disabled = true;
         liveTranscript.textContent = "말씀을 듣고 있습니다...";
       };
@@ -596,6 +1205,7 @@
       recognition.onend = () => {
         state.listening = false;
         setStatus("대기 중");
+        voiceButton.textContent = "음성으로 주문하기";
         voiceButton.disabled = false;
       };
 
@@ -608,6 +1218,15 @@
       state.cart = [];
       renderCart();
       confirmMessage.textContent = "장바구니를 비웠습니다.";
+    });
+    document.getElementById("clearSearchButton").addEventListener("click", () => {
+      state.searchQuery = "";
+      menuSearchInput.value = "";
+      renderMenus();
+    });
+    menuSearchInput.addEventListener("input", (event) => {
+      state.searchQuery = event.target.value.trim();
+      renderMenus();
     });
     document.getElementById("voiceButton").addEventListener("click", async () => {
       if (!state.recognition || state.listening) {
@@ -626,20 +1245,34 @@
         voiceButton.disabled = false;
       }
     });
-    document.getElementById("confirmButton").addEventListener("click", confirmOrder);
-    searchInput.addEventListener("input", (event) => {
-      state.search = event.target.value;
-      applyMenuFilter();
+    document.getElementById("confirmButton").addEventListener("click", openPaymentModal);
+    document.getElementById("clearBrowseButton").addEventListener("click", () => {
+      clearBrowseResult({ resetCategory: true });
+      voiceMessage.textContent = "전체 메뉴 보기로 돌아왔습니다.";
+    });
+    document.getElementById("undoLastVoiceButton").addEventListener("click", undoLastVoiceOrder);
+    document.getElementById("closePaymentModalButton").addEventListener("click", closePaymentModal);
+    document.getElementById("backToMethodsButton").addEventListener("click", showPaymentMethods);
+    document.getElementById("simulatePaymentButton").addEventListener("click", submitOrder);
+    paymentMethodGrid.querySelectorAll("button[data-method]").forEach((button) => {
+      button.addEventListener("click", () => selectPaymentMethod(button.dataset.method));
+    });
+    paymentModal.addEventListener("click", (event) => {
+      if (event.target === paymentModal) closePaymentModal();
+    });
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closePaymentModal();
     });
 
     window.addMenuToCart = addMenuToCart;
     window.changeQuantity = changeQuantity;
+    window.setActiveCategory = setActiveCategory;
 
-    setTodayLabel();
+    applyPaymentLocale();
     initSpeechRecognition();
     updatePermissionStatus();
     loadMenus().catch((error) => {
-      menuGrid.innerHTML = `<div class="sm:col-span-2 xl:col-span-4 rounded-[2rem] border border-rose-200 bg-rose-50 p-8 text-center text-rose-600">${error.message}</div>`;
+      menuGrid.innerHTML = `<div class="rounded-[28px] border border-rose-200 bg-rose-50 p-8 text-center text-rose-600">${error.message}</div>`;
     });
     renderCart();
   </script>
