@@ -135,52 +135,19 @@
   <main class="mx-auto max-w-[1700px] px-4 py-4 lg:px-6 lg:py-6">
     <div class="shell rounded-[36px] p-4 lg:p-6">
       <section id="entryScreen" class="min-h-[calc(100vh-5rem)]">
-        <div class="grid min-h-[calc(100vh-8rem)] gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div class="entry-card flex flex-col justify-between rounded-[34px] p-8 lg:p-12">
-            <div>
-              <p class="inline-flex rounded-full border border-[#d7e6dc] bg-white/75 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.24em] text-[#195743]">Hybrid Ordering Kiosk</p>
-              <h1 class="mt-6 text-[42px] font-black leading-[1.08] tracking-[-0.05em] text-[#18231f] lg:text-[64px]">카페 키오스크를<br>터치와 음성으로<br>자연스럽게</h1>
-              <p class="mt-6 max-w-[560px] text-[16px] leading-8 text-[#5b6661] lg:text-[18px]">시작 화면에서 주문 방식을 고르고, 메뉴는 카테고리 중심으로 빠르게 탐색할 수 있게 구성했습니다. 음성 주문은 단계별 팝업으로 이어지고, 키워드만 말해도 메뉴판이 자동으로 필터링됩니다.</p>
-            </div>
+        <div class="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+          <div class="entry-card w-full max-w-[980px] rounded-[34px] p-8 text-center lg:p-12">
+            <h1 class="text-[42px] font-black leading-[1.08] tracking-[-0.05em] text-[#18231f] lg:text-[64px]">음성으로 주문하는 키오스크</h1>
             <div class="mt-10 grid gap-4 sm:grid-cols-2">
               <button id="startTouchButton" class="feature-tile rounded-[30px] bg-[linear-gradient(135deg,#195743_0%,#12382d_100%)] p-7 text-left text-white transition hover:-translate-y-1">
                 <p class="text-[13px] font-semibold uppercase tracking-[0.24em] text-white/72">Touch Order</p>
                 <h2 class="mt-5 text-[34px] font-black tracking-[-0.05em]">터치 주문</h2>
-                <p class="mt-3 text-[15px] leading-7 text-white/78">메뉴판을 보고 직접 담고 결제하는 일반 키오스크 흐름</p>
               </button>
               <button id="startVoiceButton" class="feature-tile rounded-[30px] bg-[linear-gradient(135deg,#f5ead3_0%,#e8d8bc_100%)] p-7 text-left text-[#3a2f1d] transition hover:-translate-y-1">
                 <p class="text-[13px] font-semibold uppercase tracking-[0.24em] text-[#876534]">Voice Order</p>
                 <h2 class="mt-5 text-[34px] font-black tracking-[-0.05em]">음성 주문</h2>
-                <p class="mt-3 text-[15px] leading-7 text-[#6b5a3d]">단계별 안내 팝업과 음성 인식으로 주문을 이어가는 흐름</p>
               </button>
             </div>
-          </div>
-          <div class="grid gap-4 lg:grid-cols-2 lg:grid-rows-2">
-            <article class="soft-panel feature-tile rounded-[30px] p-6">
-              <p class="text-[12px] font-semibold uppercase tracking-[0.24em] text-[#7b8b84]">01</p>
-              <h3 class="mt-4 text-[28px] font-black tracking-[-0.04em] text-[#18231f]">간결한 터치 UI</h3>
-              <p class="mt-3 text-[15px] leading-7 text-[#5f6a64]">상단 헤더, 영수증, 고객 정보 입력란을 제거하고 메뉴와 장바구니 중심으로 화면을 재배치했습니다.</p>
-            </article>
-            <article class="soft-panel feature-tile rounded-[30px] p-6">
-              <p class="text-[12px] font-semibold uppercase tracking-[0.24em] text-[#7b8b84]">02</p>
-              <h3 class="mt-4 text-[28px] font-black tracking-[-0.04em] text-[#18231f]">키워드 음성 필터</h3>
-              <p class="mt-3 text-[15px] leading-7 text-[#5f6a64]">검색 바에서는 음성 기능을 필터 전용으로만 사용해, 메뉴를 바로 담지 않고 관련 항목만 좁혀서 보여줍니다.</p>
-            </article>
-            <article class="soft-panel feature-tile rounded-[30px] p-6 lg:col-span-2">
-              <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <p class="text-[12px] font-semibold uppercase tracking-[0.24em] text-[#7b8b84]">03</p>
-                  <h3 class="mt-4 text-[28px] font-black tracking-[-0.04em] text-[#18231f]">단계형 음성 플로우</h3>
-                  <p class="mt-3 max-w-[520px] text-[15px] leading-7 text-[#5f6a64]">메뉴 담기, 추가 주문, 식사 방식, 결제 수단, 결제 안내, 주문 완료까지 하나의 흐름으로 이어집니다. 순서가 어긋난 발화도 기본적인 보정 로직으로 다시 안내합니다.</p>
-                </div>
-                <div class="voice-orb flex h-[170px] w-[170px] items-center justify-center rounded-full bg-[linear-gradient(135deg,#195743_0%,#12382d_100%)] text-white">
-                  <div class="relative z-10 text-center">
-                    <p class="text-[12px] font-semibold uppercase tracking-[0.24em] text-white/68">Ready</p>
-                    <p class="mt-3 text-[36px] font-black">VOICE</p>
-                  </div>
-                </div>
-              </div>
-            </article>
           </div>
         </div>
       </section>
@@ -206,9 +173,8 @@
                   <button id="searchVoiceButton" class="rounded-full bg-[linear-gradient(135deg,#195743_0%,#12382d_100%)] px-4 py-2 text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">음성 필터</button>
                 </div>
               </div>
-              <p id="searchVoiceStatus" class="mt-3 text-[13px] text-[#6a756f]">검색창에서는 키워드 음성 필터만 동작합니다.</p>
+              <p id="searchVoiceStatus" class="mt-3 text-[13px] text-[#6a756f]">검색창에서는 음성 검색을 사용할 수 있습니다.</p>
             </div>
-            <div id="categoryFeatureGrid" class="mt-5 grid gap-4 sm:grid-cols-2 2xl:grid-cols-4"></div>
             <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
               <div id="categoryTabs" class="flex flex-wrap gap-2"></div>
               <p id="resultSummary" class="text-[13px] font-medium text-[#6a756f]">메뉴를 불러오는 중입니다.</p>
@@ -483,7 +449,6 @@
       clearSearchButton: document.getElementById("clearSearchButton"),
       searchVoiceButton: document.getElementById("searchVoiceButton"),
       searchVoiceStatus: document.getElementById("searchVoiceStatus"),
-      categoryFeatureGrid: document.getElementById("categoryFeatureGrid"),
       categoryTabs: document.getElementById("categoryTabs"),
       resultSummary: document.getElementById("resultSummary"),
       browsePanel: document.getElementById("browsePanel"),
@@ -614,21 +579,6 @@
 
     function setPanelMessage(message) {
       refs.panelStatusMessage.textContent = message;
-    }
-
-    function renderCategoryFeatureGrid() {
-      const counts = groupCounts();
-      const cards = ["coffee", "beverage", "tea", "ade"];
-      refs.categoryFeatureGrid.innerHTML = cards.map((key) => {
-        const meta = CATEGORY_META[key];
-        return `
-          <article class="feature-tile rounded-[28px] bg-white/88 p-5 ring-1 ring-[#e2e8e3] shadow-[0_18px_34px_rgba(24,56,45,0.06)]">
-            <p class="text-[12px] font-semibold uppercase tracking-[0.24em] text-[#7a8a83]">${meta.label}</p>
-            <h3 class="mt-4 text-[30px] font-black tracking-[-0.05em] text-[#18231f]">${counts[key]}개</h3>
-            <p class="mt-2 text-[14px] text-[#64706b]">${meta.description}</p>
-          </article>
-        `;
-      }).join("");
     }
 
     function renderTabs() {
@@ -984,7 +934,6 @@
     }
 
     function renderAll() {
-      renderCategoryFeatureGrid();
       renderTabs();
       renderBrowsePanel();
       renderMenuGrid();
@@ -1160,7 +1109,7 @@
       refs.completionOverlay.classList.remove("flex");
       refs.orderScreen.classList.add("hidden-screen");
       refs.entryScreen.classList.remove("hidden-screen");
-      refs.searchVoiceStatus.textContent = "검색창에서는 키워드 음성 필터만 동작합니다.";
+      refs.searchVoiceStatus.textContent = "검색창에서는 음성 검색을 사용할 수 있습니다.";
     }
 
     function openOrderScreen(channel) {
