@@ -1,7 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
+import os
 import re
 import sqlite3
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
@@ -11,7 +13,21 @@ from flask import Flask, jsonify, render_template, request
 from init_db import initialize_database
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "kiosk.db"
+
+
+def resolve_db_path() -> Path:
+    configured_path = os.getenv("KIOSK_DB_PATH")
+    if configured_path:
+        return Path(configured_path)
+
+    if os.getenv("VERCEL"):
+        # Vercel can only write safely into /tmp unless an external durable path is provided.
+        return Path(tempfile.gettempdir()) / "kiosk.db"
+
+    return BASE_DIR / "kiosk.db"
+
+
+DB_PATH = resolve_db_path()
 
 app = Flask(__name__)
 
@@ -78,7 +94,9 @@ def extract_quantity(snippet: str) -> int:
     if digit_match:
         return max(1, int(digit_match.group(1)))
 
-    for word, value in sorted(KOREAN_NUMBER_MAP.items(), key=lambda item: len(item[0]), reverse=True):
+    for word, value in sorted(
+        KOREAN_NUMBER_MAP.items(), key=lambda item: len(item[0]), reverse=True
+    ):
         if word in snippet:
             return value
     return 1
