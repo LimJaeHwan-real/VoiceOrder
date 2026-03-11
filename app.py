@@ -12,6 +12,15 @@ from services.voice_order_service import parse_voice_order_result
 app = Flask(__name__)
 
 
+def build_pending_option_message(pending_items):
+    first_item = pending_items[0]
+    group_name = first_item["group_name"]
+    quantity = first_item["quantity"]
+    count_label = f"{quantity}잔" if quantity > 1 else "1잔"
+    action_label = "뺄까요" if first_item.get("action") == "cancel" else "담을까요"
+    return f"{group_name} {count_label}은 아이스와 핫 중 어떤 걸로 {action_label}"
+
+
 @app.route("/")
 def index():
     ensure_database()
@@ -64,17 +73,19 @@ def api_order_voice():
     order_result = parse_voice_order_result(text, menus)
     items = order_result["items"]
     cancel_items = order_result["cancel_items"]
+    pending_items = order_result["pending_items"]
     remaining_text = order_result["remaining_text"]
     total_price = sum(item["subtotal"] for item in items)
     browse_text = remaining_text if (items or cancel_items) else (remaining_text or text)
-    browse_result = browse_menus_by_intent(browse_text, menus) if browse_text else None
+    browse_result = browse_menus_by_intent(browse_text, menus) if (browse_text and not pending_items) else None
 
-    if not items and not cancel_items:
+    if not items and not cancel_items and not pending_items:
         return jsonify(
             {
                 "transcript": text,
                 "items": [],
                 "cancel_items": [],
+                "pending_items": [],
                 "total_price": 0,
                 "browse_result": browse_result,
                 "message": (
@@ -85,16 +96,32 @@ def api_order_voice():
             }
         )
 
+    if pending_items and not items and not cancel_items:
+        return jsonify(
+            {
+                "transcript": text,
+                "items": [],
+                "cancel_items": [],
+                "pending_items": pending_items,
+                "total_price": 0,
+                "browse_result": None,
+                "message": build_pending_option_message(pending_items),
+            }
+        )
+
     if cancel_items:
         return jsonify(
             {
                 "transcript": text,
                 "items": items,
                 "cancel_items": cancel_items,
+                "pending_items": pending_items,
                 "total_price": 0,
-                "browse_result": browse_result if not items else None,
+                "browse_result": browse_result if not items and not pending_items else None,
                 "message": (
-                    "담을 메뉴와 취소할 메뉴를 함께 확인했습니다."
+                    f"메뉴를 반영했고, {build_pending_option_message(pending_items)}"
+                    if pending_items
+                    else "담을 메뉴와 취소할 메뉴를 함께 확인했습니다."
                     if items
                     else "장바구니에서 뺄 메뉴를 확인했습니다."
                 ),
@@ -106,9 +133,13 @@ def api_order_voice():
             "transcript": text,
             "items": items,
             "cancel_items": [],
+            "pending_items": pending_items,
             "total_price": total_price,
-            "browse_result": browse_result,
+            "browse_result": browse_result if not pending_items else None,
             "message": (
+                build_pending_option_message(pending_items)
+                if pending_items
+                else
                 "메뉴를 장바구니에 담고 관련 메뉴도 함께 보여주고 있습니다."
                 if browse_result
                 else "메뉴를 장바구니에 담았습니다."
@@ -185,4 +216,3 @@ def api_order_confirm():
 if __name__ == "__main__":
     ensure_database()
     app.run(debug=True, host="0.0.0.0", port=5000)
-

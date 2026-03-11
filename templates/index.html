@@ -429,6 +429,7 @@
         transcript: "",
         message: "",
         awaitingManualSelection: false,
+        pendingSelections: [],
       },
       checkout: {
         open: false,
@@ -509,6 +510,17 @@
       if (temperature === "ice") return "ICE";
       if (temperature === "hot") return "HOT";
       return "담기";
+    }
+
+    function detectTemperatureChoice(transcript) {
+      const text = normalizeText(transcript);
+      if (["아이스", "차갑", "시원", "ice", "iced"].some((keyword) => text.includes(normalizeText(keyword)))) {
+        return "ice";
+      }
+      if (["핫", "따뜻", "뜨거", "hot", "warm"].some((keyword) => text.includes(normalizeText(keyword)))) {
+        return "hot";
+      }
+      return "";
     }
 
     function buildMenuGroups(menus) {
@@ -869,12 +881,22 @@
       refs.voiceFlowListenButton.disabled = !state.recognition || Boolean(state.speechSession);
 
       if (state.voiceFlow.step === 2) {
-        refs.voiceFlowChoices.innerHTML = `
-          <button class="rounded-[20px] border border-[#d8c8ab] bg-white px-5 py-4 text-left text-[#4b4134]" data-voice-action="proceed-payment">
-            <p class="text-[15px] font-black">결제 단계로 이동</p>
-            <p class="mt-1 text-[12px] text-[#7f7363]">추가 주문이 없으면 바로 다음 단계로 넘어갑니다.</p>
-          </button>
-        `;
+        if (state.voiceFlow.pendingSelections.length) {
+          const pending = state.voiceFlow.pendingSelections[0];
+          refs.voiceFlowChoices.innerHTML = pending.options.map((option) => `
+            <button class="rounded-[20px] border border-[#d8c8ab] bg-white px-5 py-4 text-left text-[#4b4134]" data-voice-action="pending-temperature" data-menu-id="${option.menu_id}" data-temperature="${option.temperature}">
+              <p class="text-[15px] font-black">${optionLabel(option.temperature)} ${pending.group_name}</p>
+              <p class="mt-1 text-[12px] text-[#7f7363]">${formatPrice(option.price)} · ${pending.quantity}개 ${pending.action === "cancel" ? "취소" : "추가"}</p>
+            </button>
+          `).join("");
+        } else {
+          refs.voiceFlowChoices.innerHTML = `
+            <button class="rounded-[20px] border border-[#d8c8ab] bg-white px-5 py-4 text-left text-[#4b4134]" data-voice-action="proceed-payment">
+              <p class="text-[15px] font-black">결제 단계로 이동</p>
+              <p class="mt-1 text-[12px] text-[#7f7363]">추가 주문이 없으면 바로 다음 단계로 넘어갑니다.</p>
+            </button>
+          `;
+        }
       } else if (state.voiceFlow.step === 3) {
         refs.voiceFlowChoices.innerHTML = Object.entries(SERVICE_META).map(([value, meta]) => `
           <button class="rounded-[20px] border border-[#d8c8ab] bg-white px-5 py-4 text-left text-[#4b4134]" data-voice-action="service" data-value="${value}">
@@ -1075,6 +1097,47 @@
       return removedTotal;
     }
 
+    function resolvePendingSelection(menuId) {
+      const pending = state.voiceFlow.pendingSelections[0];
+      if (!pending) return false;
+
+      const option = pending.options.find((item) => item.menu_id === Number(menuId));
+      if (!option) {
+        openVoiceFlowStep(2, `${pending.group_name}은 아이스 또는 핫 중 하나로 다시 말씀해 주세요.`, { autoListen: true });
+        return false;
+      }
+
+      if (pending.action === "cancel") {
+        const removed = removeCartQuantity(option.menu_id, pending.quantity || 1);
+        if (!removed) {
+          openVoiceFlowStep(2, `${pending.group_name}은(는) 장바구니에서 찾지 못했어요. 다시 말씀해 주세요.`, { autoListen: true });
+          return false;
+        }
+        setPanelMessage(`${option.name} ${removed}개를 장바구니에서 제거했습니다.`);
+      } else {
+        mergeCartItems([
+          {
+            menu_id: option.menu_id,
+            name: option.name,
+            price: option.price,
+            quantity: pending.quantity || 1,
+            subtotal: option.price * (pending.quantity || 1),
+            category: option.category,
+            temperature: option.temperature,
+          },
+        ], "voice");
+      }
+
+      state.voiceFlow.pendingSelections.shift();
+
+      if (state.voiceFlow.pendingSelections.length) {
+        openVoiceFlowStep(2, `${state.voiceFlow.pendingSelections[0].group_name}은 아이스와 핫 중 어떤 걸로 ${state.voiceFlow.pendingSelections[0].action === "cancel" ? "뺄까요" : "담을까요"}?`, { autoListen: true });
+      } else {
+        openVoiceFlowStep(2, `${option.name} ${pending.quantity || 1}개를 반영했어요. 추가 주문이 있으면 계속 말씀해 주세요.`, { autoListen: true });
+      }
+      return true;
+    }
+
     function resetOrderState(options = {}) {
       cancelSpeechSession();
       if ("speechSynthesis" in window) {
@@ -1089,6 +1152,7 @@
       refs.menuSearchInput.value = "";
       state.subtitleText = "";
       state.voiceFlow.awaitingManualSelection = false;
+      state.voiceFlow.pendingSelections = [];
       state.voiceFlow.transcript = "";
       state.voiceFlow.message = "";
       renderVoiceSelectionNotice(false, "");
@@ -1295,14 +1359,32 @@
         const removedTotal = cancelCartItems(data.cancel_items);
         if (removedTotal > 0) {
           setPanelMessage("장바구니에서 요청한 메뉴를 제거했습니다.");
-          openVoiceFlowStep(state.cart.length ? 2 : 1, data.message || "삭제 요청을 반영했어요.", { autoListen: true });
-          return true;
         }
       }
 
       if (Array.isArray(data.items) && data.items.length) {
         mergeCartItems(data.items, "voice");
+      }
+
+      if (Array.isArray(data.pending_items) && data.pending_items.length) {
+        state.voiceFlow.pendingSelections = data.pending_items.map((item) => ({ ...item }));
+        openVoiceFlowStep(2, data.message || `${data.pending_items[0].group_name}은 아이스와 핫 중 어떤 걸로 담을까요?`, { autoListen: true });
+        return true;
+      }
+
+      if (Array.isArray(data.items) && data.items.length) {
+        state.voiceFlow.pendingSelections = [];
         openVoiceFlowStep(2, `${data.items.map((item) => item.name).join(", ")} 메뉴를 담았어요. 추가 주문이 있으면 계속 말씀해 주세요.`, { autoListen: true });
+        return true;
+      }
+
+      if (Array.isArray(data.cancel_items) && data.cancel_items.length) {
+        state.voiceFlow.pendingSelections = [];
+        if (state.cart.length) {
+          openVoiceFlowStep(2, data.message || "삭제 요청을 반영했어요. 추가 주문이 있으면 계속 말씀해 주세요.", { autoListen: true });
+        } else {
+          openVoiceFlowStep(1, data.message || "삭제 요청을 반영했어요.", { autoListen: true });
+        }
         return true;
       }
 
@@ -1330,6 +1412,18 @@
       const serviceMode = detectServiceMode(transcript);
       const paymentMethod = detectPaymentMethod(transcript);
       const paymentIntent = detectPaymentIntent(transcript);
+      const temperatureChoice = detectTemperatureChoice(transcript);
+
+      if ((step === 1 || step === 2) && state.voiceFlow.pendingSelections.length) {
+        if (!temperatureChoice) {
+          openVoiceFlowStep(2, `${state.voiceFlow.pendingSelections[0].group_name}은 아이스 또는 핫 중 하나로 말씀해 주세요.`, { autoListen: true });
+          return;
+        }
+        resolvePendingSelection(
+          state.voiceFlow.pendingSelections[0].options.find((option) => option.temperature === temperatureChoice)?.menu_id
+        );
+        return;
+      }
 
       if ((step === 1 || step === 2) && paymentMethod) {
         if (!state.cart.length) {
@@ -1876,6 +1970,10 @@
       if (!button) return;
       const action = button.dataset.voiceAction;
       const value = button.dataset.value;
+      if (action === "pending-temperature") {
+        resolvePendingSelection(Number(button.dataset.menuId));
+        return;
+      }
       if (action === "proceed-payment") {
         if (!state.cart.length) {
           openVoiceFlowStep(2, "먼저 메뉴를 장바구니에 담아주세요.", { autoListen: true });
@@ -1938,5 +2036,3 @@
   </script>
 </body>
 </html>
-
-
