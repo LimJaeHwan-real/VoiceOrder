@@ -83,8 +83,23 @@ http://localhost:5000
 
 - 작업 가이드: `CONTRIBUTING.md`
 - PR 템플릿: `.github/PULL_REQUEST_TEMPLATE.md`
+
 ## Vercel 배포 참고
 
 현재 Vercel 배포에서는 `KIOSK_DB_PATH` 환경변수를 따로 주지 않으면 `/tmp/kiosk.db`를 사용합니다.
 이 경로는 데모 실행에는 적합하지만, 인스턴스 재시작이나 재배포 후 주문 데이터가 유지된다고 보장되지는 않습니다.
 지속 저장이 필요하면 외부 DB나 영속 스토리지를 연결한 뒤 `KIOSK_DB_PATH`를 설정해야 합니다.
+
+## 배포 자동화
+
+`main` 브랜치에 푸시되면 GitHub Actions가 Vercel `production` 배포를 실행합니다.
+
+동작 파일:
+
+- `.github/workflows/vercel-production.yml`
+
+필수 GitHub Actions secret:
+
+- `VERCEL_TOKEN`: Vercel 개인 또는 팀 토큰
+
+이 저장소는 이미 Vercel 프로젝트에 연결되어 있어 워크플로 안에 `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`가 고정되어 있습니다.
