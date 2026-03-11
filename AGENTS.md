@@ -110,6 +110,16 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
 ### How to use skills
 - Discovery: The list above is the skills available in this session (name + description + file path). Skill bodies live on disk at the listed paths.
 - Trigger rules: If the user names a skill (with `$SkillName` or plain text) OR the task clearly matches a skill's description shown above, you must use that skill for that turn. Treat requests such as "깃허브에 올려줘" or "GitHub에 올려줘" as matching `git-collaboration-flow` with the default expectation of branch push -> PR creation -> PR merge -> main-branch reflection when repository permissions and workflow allow it. Treat requests such as "브랜치 파서 PR까지 해줘", "PR 준비해줘", "main에 반영되게 진행해줘", or "push 해줘" as matching `git-collaboration-flow` as well unless the user explicitly asks for a different workflow. Automatic deployment after a push to `main` is handled by the GitHub Actions workflow at `.github/workflows/vercel-production.yml`, not by chaining `vercel-deploy` automatically. Treat requests about manual deployment, preview deployment, production deployment outside the workflow, or deployment URL retrieval as matching `vercel-deploy`. Multiple mentions mean use them all. Do not carry skills across turns unless re-mentioned.
+- GitHub collaboration default: Even if `git-collaboration-flow` is unavailable, follow this repository default directly from `AGENTS.md`: branch push -> PR creation -> PR merge -> main-branch reflection. When the user says "깃허브에 올려줘" or equivalent, treat the request as aiming for that full path unless repository permissions, branch protection, required reviews, or missing credentials block a later step.
+- GitHub collaboration execution rules:
+  1) Check the current branch, working tree, and remotes before branch switching, merging, or cleanup.
+  2) Preserve user changes. If the tree is dirty, stash or otherwise isolate only what is necessary before changing branches.
+  3) Push the intended work branch to `origin`.
+  4) Create or prepare a PR targeting `main`.
+  5) Merge the PR into `main` when the repository workflow and user intent allow it.
+  6) Sync local `main` or the dedicated main worktree after merge when needed.
+  7) Let `.github/workflows/vercel-production.yml` handle automatic deployment after `main` changes land.
+- GitHub collaboration fallback: If PR creation or merge cannot be completed automatically because GitHub CLI is unavailable, branch protection blocks merge, or remote permissions are missing, still finish the highest safe step and clearly report the exact next manual step.
 - Missing/blocked: If a named skill isn't in the list or the path can't be read, say so briefly and continue with the best fallback.
 - How to use a skill (progressive disclosure):
   1) After deciding to use a skill, open its `SKILL.md`. Read only enough to follow the workflow.
